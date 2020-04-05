@@ -314,17 +314,20 @@ class Trader_ZIP(Trader):
                 bid_hit = False
                 lob_best_bid_p = lob['bids']['best']
                 lob_best_bid_q = None
-                if lob_best_bid_p != None:
+                if lob_best_bid_p is not None:
                         # non-empty bid LOB
                         lob_best_bid_q = lob['bids']['lob'][-1][1]
-                        if self.prev_best_bid_p < lob_best_bid_p :
+                        if self.prev_best_bid_p is None:
+                                self.prev_best_bid_p = lob_best_bid_p
+                        elif self.prev_best_bid_p < lob_best_bid_p:
                                 # best bid has improved
                                 # NB doesn't check if the improvement was by self
                                 bid_improved = True
-                        elif trade != None and ((self.prev_best_bid_p > lob_best_bid_p) or ((self.prev_best_bid_p == lob_best_bid_p) and (self.prev_best_bid_q > lob_best_bid_q))):
+                        elif trade is not None and ((self.prev_best_bid_p > lob_best_bid_p) or (
+                                (self.prev_best_bid_p == lob_best_bid_p) and (self.prev_best_bid_q > lob_best_bid_q))):
                                 # previous best bid was hit
                                 bid_hit = True
-                elif self.prev_best_bid_p != None:
+                elif self.prev_best_bid_p is not None:
                         # the bid LOB has been emptied: was it cancelled or hit?
                         last_tape_item = lob['tape'][-1]
                         if last_tape_item['type'] == 'Cancel' :
@@ -337,16 +340,19 @@ class Trader_ZIP(Trader):
                 ask_lifted = False
                 lob_best_ask_p = lob['asks']['best']
                 lob_best_ask_q = None
-                if lob_best_ask_p != None:
+                if lob_best_ask_p is not None:
                         # non-empty ask LOB
                         lob_best_ask_q = lob['asks']['lob'][0][1]
-                        if self.prev_best_ask_p > lob_best_ask_p :
+                        if self.prev_best_ask_p is None:
+                                self.prev_best_ask_p = lob_best_ask_p
+                        elif self.prev_best_ask_p > lob_best_ask_p:
                                 # best ask has improved -- NB doesn't check if the improvement was by self
                                 ask_improved = True
-                        elif trade != None and ((self.prev_best_ask_p < lob_best_ask_p) or ((self.prev_best_ask_p == lob_best_ask_p) and (self.prev_best_ask_q > lob_best_ask_q))):
+                        elif trade is not None and ((self.prev_best_ask_p < lob_best_ask_p) or (
+                                (self.prev_best_ask_p == lob_best_ask_p) and (self.prev_best_ask_q > lob_best_ask_q))):
                                 # trade happened and best ask price has got worse, or stayed same but quantity reduced -- assume previous best ask was lifted
                                 ask_lifted = True
-                elif self.prev_best_ask_p != None:
+                elif self.prev_best_ask_p is not None:
                         # the ask LOB is empty now but was not previously: canceled or lifted?
                         last_tape_item = lob['tape'][-1]
                         if last_tape_item['type'] == 'Cancel' :

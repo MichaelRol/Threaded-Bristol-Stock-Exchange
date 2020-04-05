@@ -1298,6 +1298,7 @@ if __name__ == "__main__":
                                 if trdr_4_n >= min_n:
                                         buyers_spec = [('GVWY', trdr_1_n), ('SHVR', trdr_2_n),
                                                        ('ZIC', trdr_3_n), ('ZIP', trdr_4_n)]
+                                        print(buyers_spec)
                                         sellers_spec = buyers_spec
                                         traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
                                         # print buyers_spec
