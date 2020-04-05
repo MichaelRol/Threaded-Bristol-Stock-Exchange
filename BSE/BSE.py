@@ -135,7 +135,7 @@ class Orderbook_half:
                         self.best_price = None
                         self.best_tid = None
 
-                if lob_verbose : print self.lob
+                if lob_verbose : print(self.lob)
 
 
         def book_add(self, order):
@@ -432,9 +432,9 @@ class Trader:
                 self.profitpertime = self.balance/(time - self.birthtime)
 
                 if profit < 0 :
-                        print profit
-                        print trade
-                        print order
+                        print(profit)
+                        print(trade)
+                        print(order)
                         sys.exit()
 
                 if verbose: print('%s profit=%d balance=%d profit/time=%d' % (outstr, profit, self.balance, self.profitpertime))
@@ -826,7 +826,7 @@ def trade_stats(expid, traders, dumpfile, time, lob):
                 dumpfile.write('%d, ' % (lob['asks']['best']))
         else:
                 dumpfile.write('N, ')
-        dumpfile.write('\n');
+        dumpfile.write('\n')
 
 
 
@@ -1314,6 +1314,6 @@ if __name__ == "__main__":
                 trdr_1_n += 1
         tdump.close()
         
-        print trialnumber
+        print(trialnumber)
 
 
