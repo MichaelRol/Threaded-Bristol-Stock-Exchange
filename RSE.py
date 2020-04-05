@@ -1,9 +1,8 @@
-# importing the multiprocessing module 
 import sys
 import math
-# import threading 
+import threading 
 import time 
-# import queue
+import queue
 import random
 from RSE_exchange import Exchange
 from RSE_customer_orders import customer_orders
@@ -17,34 +16,35 @@ from RSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Tra
 # between successive calls, but that does make it inefficient as it has to
 # re-analyse the entire set of traders on each call
 def trade_stats(expid, traders, dumpfile, time, lob):
-        trader_types = {}
-        # n_traders = len(traders)
-        for t in traders:
-                ttype = traders[t].ttype
-                if ttype in trader_types.keys():
-                        t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
-                        n = trader_types[ttype]['n'] + 1
-                else:
-                        t_balance = traders[t].balance
-                        n = 1
-                trader_types[ttype] = {'n':n, 'balance_sum':t_balance}
+	
+	trader_types = {}
+	# n_traders = len(traders)
+	for t in traders:
+			ttype = traders[t].ttype
+			if ttype in trader_types.keys():
+					t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
+					n = trader_types[ttype]['n'] + 1
+			else:
+					t_balance = traders[t].balance
+					n = 1
+			trader_types[ttype] = {'n':n, 'balance_sum':t_balance}
 
 
-        dumpfile.write('%s, %06d, ' % (expid, time))
-        for ttype in sorted(list(trader_types.keys())):
-                n = trader_types[ttype]['n']
-                s = trader_types[ttype]['balance_sum']
-                dumpfile.write('%s, %d, %d, %f, ' % (ttype, s, n, s / float(n)))
+	dumpfile.write('%s, %06d, ' % (expid, time))
+	for ttype in sorted(list(trader_types.keys())):
+			n = trader_types[ttype]['n']
+			s = trader_types[ttype]['balance_sum']
+			dumpfile.write('%s, %d, %d, %f, ' % (ttype, s, n, s / float(n)))
 
-        if lob['bids']['best'] != None :
-                dumpfile.write('%d, ' % (lob['bids']['best']))
-        else:
-                dumpfile.write('N, ')
-        if lob['asks']['best'] != None :
-                dumpfile.write('%d, ' % (lob['asks']['best']))
-        else:
-                dumpfile.write('N, ')
-        dumpfile.write('\n')
+	if lob['bids']['best'] != None :
+			dumpfile.write('%d, ' % (lob['bids']['best']))
+	else:
+			dumpfile.write('N, ')
+	if lob['asks']['best'] != None :
+			dumpfile.write('%d, ' % (lob['asks']['best']))
+	else:
+			dumpfile.write('N, ')
+	dumpfile.write('\n')
 
 
 
@@ -55,165 +55,190 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 # optionally shuffles the pack of buyers and the pack of sellers
 def populate_market(traders_spec, traders, shuffle, verbose):
 
-        def trader_type(robottype, name):
-                if robottype == 'GVWY':
-                        return Trader_Giveaway('GVWY', name, 0.00, 0)
-                elif robottype == 'ZIC':
-                        return Trader_ZIC('ZIC', name, 0.00, 0)
-                elif robottype == 'SHVR':
-                        return Trader_Shaver('SHVR', name, 0.00, 0)
-                elif robottype == 'SNPR':
-                        return Trader_Sniper('SNPR', name, 0.00, 0)
-                elif robottype == 'ZIP':
-                        return Trader_ZIP('ZIP', name, 0.00, 0)
-                else:
-                        sys.exit('FATAL: don\'t know robot type %s\n' % robottype)
+	def trader_type(robottype, name):
+			if robottype == 'GVWY':
+					return Trader_Giveaway('GVWY', name, 0.00, 0)
+			elif robottype == 'ZIC':
+					return Trader_ZIC('ZIC', name, 0.00, 0)
+			elif robottype == 'SHVR':
+					return Trader_Shaver('SHVR', name, 0.00, 0)
+			elif robottype == 'SNPR':
+					return Trader_Sniper('SNPR', name, 0.00, 0)
+			elif robottype == 'ZIP':
+					return Trader_ZIP('ZIP', name, 0.00, 0)
+			else:
+					sys.exit('FATAL: don\'t know robot type %s\n' % robottype)
 
 
-        def shuffle_traders(ttype_char, n, traders):
-                for swap in range(n):
-                        t1 = (n - 1) - swap
-                        t2 = random.randint(0, t1)
-                        t1name = '%c%02d' % (ttype_char, t1)
-                        t2name = '%c%02d' % (ttype_char, t2)
-                        traders[t1name].tid = t2name
-                        traders[t2name].tid = t1name
-                        temp = traders[t1name]
-                        traders[t1name] = traders[t2name]
-                        traders[t2name] = temp
+	def shuffle_traders(ttype_char, n, traders):
+			for swap in range(n):
+					t1 = (n - 1) - swap
+					t2 = random.randint(0, t1)
+					t1name = '%c%02d' % (ttype_char, t1)
+					t2name = '%c%02d' % (ttype_char, t2)
+					traders[t1name].tid = t2name
+					traders[t2name].tid = t1name
+					temp = traders[t1name]
+					traders[t1name] = traders[t2name]
+					traders[t2name] = temp
 
 
-        n_buyers = 0
-        for bs in traders_spec['buyers']:
-                ttype = bs[0]
-                for _ in range(bs[1]):
-                        tname = 'B%02d' % n_buyers  # buyer i.d. string
-                        traders[tname] = trader_type(ttype, tname)
-                        n_buyers = n_buyers + 1
+	n_buyers = 0
+	for bs in traders_spec['buyers']:
+			ttype = bs[0]
+			for _ in range(bs[1]):
+					tname = 'B%02d' % n_buyers  # buyer i.d. string
+					traders[tname] = trader_type(ttype, tname)
+					n_buyers = n_buyers + 1
 
-        if n_buyers < 1:
-                sys.exit('FATAL: no buyers specified\n')
+	if n_buyers < 1:
+			sys.exit('FATAL: no buyers specified\n')
 
-        if shuffle: shuffle_traders('B', n_buyers, traders)
-
-
-        n_sellers = 0
-        for ss in traders_spec['sellers']:
-                ttype = ss[0]
-                for _ in range(ss[1]):
-                        tname = 'S%02d' % n_sellers  # buyer i.d. string
-                        traders[tname] = trader_type(ttype, tname)
-                        n_sellers = n_sellers + 1
-
-        if n_sellers < 1:
-                sys.exit('FATAL: no sellers specified\n')
-
-        if shuffle: shuffle_traders('S', n_sellers, traders)
-
-        if verbose :
-                for t in range(n_buyers):
-                        bname = 'B%02d' % t
-                        print(traders[bname])
-                for t in range(n_sellers):
-                        bname = 'S%02d' % t
-                        print(traders[bname])
+	if shuffle: shuffle_traders('B', n_buyers, traders)
 
 
-        return {'n_buyers':n_buyers, 'n_sellers':n_sellers}
+	n_sellers = 0
+	for ss in traders_spec['sellers']:
+			ttype = ss[0]
+			for _ in range(ss[1]):
+					tname = 'S%02d' % n_sellers  # buyer i.d. string
+					traders[tname] = trader_type(ttype, tname)
+					n_sellers = n_sellers + 1
+
+	if n_sellers < 1:
+			sys.exit('FATAL: no sellers specified\n')
+
+	if shuffle: shuffle_traders('S', n_sellers, traders)
+
+	if verbose :
+			for t in range(n_buyers):
+					bname = 'B%02d' % t
+					print(traders[bname])
+			for t in range(n_sellers):
+					bname = 'S%02d' % t
+					print(traders[bname])
 
 
+	return {'n_buyers':n_buyers, 'n_sellers':n_sellers}
+
+def run_exchange():
+	return 0
+
+def run_trader():
+	return 0
 
 # one session in the market
 def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dumpfile, dump_each_trade, verbose):
 
 
-        # initialise the exchange
-        exchange = Exchange()
+	# 	t1 = threading.Thread(target=TraderA, args=(lob, q))
+	# 	t2 = threading.Thread(target=TraderB, args=(lob, q))
+	# 	t3 = threading.Thread(target=TraderC, args=(lob, q))
 
 
-        # create a bunch of traders
-        traders = {}
-        trader_stats = populate_market(trader_spec, traders, True, verbose)
+	# 	# starting processes 
+	# 	exchange.start()
+	# 	t1.start() 
+	# 	t2.start() 
+	# 	t3.start() 
+
+	# initialise the exchange
+	exchange = Exchange()
+	# lob = {}
+	# order_q = queue.Queue()
+	# ex_thread = threading.Thread(target=run_exchange(), args(exchange, lob, order_q, thread_qs,))
 
 
-        # timestep set so that can process all traders in one second
-        # NB minimum interarrival time of customer orders may be much less than this!! 
-        timestep = 1.0 / float(trader_stats['n_buyers'] + trader_stats['n_sellers'])
-        
-        duration = float(endtime - starttime)
+	# create a bunch of traders
+	traders = {}
+	#trader_threads = []
+	trader_stats = populate_market(trader_spec, traders, True, verbose)
+	# # create threads for traders
+	# for i in range(0, len(traders)):
+	#     trader_threads[i] = threading.Thread(target=run_trader(), args=(traders[i], lob, starttime, duration)) 
 
-        last_update = -1.0
+	# # start trader threads
+	# for thread in trader_threads:
+	#     thread.start()
 
-        time = starttime
+	# timestep set so that can process all traders in one second
+	# NB minimum interarrival time of customer orders may be much less than this!! 
+	timestep = 1.0 / float(trader_stats['n_buyers'] + trader_stats['n_sellers'])
+	
+	duration = float(endtime - starttime)
 
-        orders_verbose = False
-        lob_verbose = False
-        process_verbose = False
-        respond_verbose = False
-        bookkeep_verbose = False
+	last_update = -1.0
 
-        pending_cust_orders = []
+	time = starttime
 
-        if verbose: print('\n%s;  ' % (sess_id))
+	orders_verbose = False
+	lob_verbose = False
+	process_verbose = False
+	respond_verbose = False
+	bookkeep_verbose = False
 
-        while time < endtime:
+	pending_cust_orders = []
 
-                # how much time left, as a percentage?
-                time_left = (endtime - time) / duration
+	if verbose: print('\n%s;  ' % (sess_id))
 
-                # if verbose: print('\n\n%s; t=%08.2f (%4.1f/100) ' % (sess_id, time, time_left*100))
+	while time < endtime:
 
-                trade = None
+			# how much time left, as a percentage?
+			time_left = (endtime - time) / duration
 
-                [pending_cust_orders, kills] = customer_orders(time, last_update, traders, trader_stats,
-                                                 order_schedule, pending_cust_orders, orders_verbose)
+			# if verbose: print('\n\n%s; t=%08.2f (%4.1f/100) ' % (sess_id, time, time_left*100))
 
-                # if any newly-issued customer orders mean quotes on the LOB need to be cancelled, kill them
-                if len(kills) > 0 :
-                        # if verbose : print('Kills: %s' % (kills))
-                        for kill in kills :
-                                # if verbose : print('lastquote=%s' % traders[kill].lastquote)
-                                if traders[kill].lastquote != None :
-                                        # if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
-                                        exchange.del_order(time, traders[kill].lastquote, verbose)
+			trade = None
 
+			[pending_cust_orders, kills] = customer_orders(time, last_update, traders, trader_stats,
+												order_schedule, pending_cust_orders, orders_verbose)
 
-                # get a limit-order quote (or None) from a randomly chosen trader
-                tid = list(traders.keys())[random.randint(0, len(traders) - 1)]
-                order = traders[tid].getorder(time, time_left, exchange.publish_lob(time, lob_verbose))
-
-                # if verbose: print('Trader Quote: %s' % (order))
-
-                if order != None:
-                        if order.otype == 'Ask' and order.price < traders[tid].orders[0].price: sys.exit('Bad ask')
-                        if order.otype == 'Bid' and order.price > traders[tid].orders[0].price: sys.exit('Bad bid')
-                        # send order to exchange
-                        traders[tid].n_quotes = 1
-                        trade = exchange.process_order2(time, order, process_verbose)
-                        if trade != None:
-                                # trade occurred,
-                                # so the counterparties update order lists and blotters
-                                traders[trade['party1']].bookkeep(trade, order, bookkeep_verbose, time)
-                                traders[trade['party2']].bookkeep(trade, order, bookkeep_verbose, time)
-                                if dump_each_trade: trade_stats(sess_id, traders, tdump, time, exchange.publish_lob(time, lob_verbose))
-
-                        # traders respond to whatever happened
-                        lob = exchange.publish_lob(time, lob_verbose)
-                        for t in traders:
-                                # NB respond just updates trader's internal variables
-                                # doesn't alter the LOB, so processing each trader in
-                                # sequence (rather than random/shuffle) isn't a problem
-                                traders[t].respond(time, lob, trade, respond_verbose)
-
-                time = time + timestep
+			# if any newly-issued customer orders mean quotes on the LOB need to be cancelled, kill them
+			if len(kills) > 0 :
+					# if verbose : print('Kills: %s' % (kills))
+					for kill in kills :
+							# if verbose : print('lastquote=%s' % traders[kill].lastquote)
+							if traders[kill].lastquote != None :
+									# if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
+									exchange.del_order(time, traders[kill].lastquote, verbose)
 
 
-        # end of an experiment -- dump the tape
-        exchange.tape_dump('transactions.csv', 'w', 'keep')
+			# get a limit-order quote (or None) from a randomly chosen trader
+			tid = list(traders.keys())[random.randint(0, len(traders) - 1)]
+			order = traders[tid].getorder(time, time_left, exchange.publish_lob(time, lob_verbose))
+
+			# if verbose: print('Trader Quote: %s' % (order))
+
+			if order is not None:
+					if order.otype == 'Ask' and order.price < traders[tid].orders[0].price: sys.exit('Bad ask')
+					if order.otype == 'Bid' and order.price > traders[tid].orders[0].price: sys.exit('Bad bid')
+					# send order to exchange
+					traders[tid].n_quotes = 1
+					trade = exchange.process_order2(time, order, process_verbose)
+					if trade is not None:
+							# trade occurred,
+							# so the counterparties update order lists and blotters
+							traders[trade['party1']].bookkeep(trade, order, bookkeep_verbose, time)
+							traders[trade['party2']].bookkeep(trade, order, bookkeep_verbose, time)
+							if dump_each_trade: trade_stats(sess_id, traders, tdump, time, exchange.publish_lob(time, lob_verbose))
+
+					# traders respond to whatever happened
+					lob = exchange.publish_lob(time, lob_verbose)
+					for t in traders:
+							# NB respond just updates trader's internal variables
+							# doesn't alter the LOB, so processing each trader in
+							# sequence (rather than random/shuffle) isn't a problem
+							traders[t].respond(time, lob, trade, respond_verbose)
+
+			time = time + timestep
 
 
-        # write trade_stats for this experiment NB end-of-session summary only
-        trade_stats(sess_id, traders, tdump, time, exchange.publish_lob(time, lob_verbose))
+	# end of an experiment -- dump the tape
+	exchange.tape_dump('transactions.csv', 'w', 'keep')
+
+
+	# write trade_stats for this experiment NB end-of-session summary only
+	trade_stats(sess_id, traders, tdump, time, exchange.publish_lob(time, lob_verbose))
 
 
 
@@ -224,24 +249,27 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 
 if __name__ == "__main__":
 
-        # set up parameters for the session
+	# set up parameters for the session
 
-        start_time = 0.0
-        end_time = 600.0
-        duration = end_time - start_time
+	start_time = 0.0
+	# start_time = time.time()
+	# duration = 1
+	# end_time = start_time + duration
+	end_time = 600.0
+	duration = end_time - start_time
 
 
-        # schedule_offsetfn returns time-dependent offset on schedule prices
-        def schedule_offsetfn(t):
-                pi2 = math.pi * 2
-                c = math.pi * 3000
-                wavelength = t / c
-                gradient = 100 * t / (c / pi2)
-                amplitude = 100 * t / (c / pi2)
-                offset = gradient + amplitude * math.sin(wavelength * t)
-                return int(round(offset, 0))
-                
-                
+	# schedule_offsetfn returns time-dependent offset on schedule prices
+	def schedule_offsetfn(t):
+			pi2 = math.pi * 2
+			c = math.pi * 3000
+			wavelength = t / c
+			gradient = 100 * t / (c / pi2)
+			amplitude = 100 * t / (c / pi2)
+			offset = gradient + amplitude * math.sin(wavelength * t)
+			return int(round(offset, 0))
+			
+			
 
 # #        range1 = (10, 190, schedule_offsetfn)
 # #        range2 = (200,300, schedule_offsetfn)
@@ -253,16 +281,16 @@ if __name__ == "__main__":
 
 
 
-        range1 = (95, 95, schedule_offsetfn)
-        supply_schedule = [ {'from':start_time, 'to':end_time, 'ranges':[range1], 'stepmode':'fixed'}
-                          ]
+	range1 = (95, 95, schedule_offsetfn)
+	supply_schedule = [ {'from':start_time, 'to':end_time, 'ranges':[range1], 'stepmode':'fixed'}
+						]
 
-        range1 = (105, 105, schedule_offsetfn)
-        demand_schedule = [ {'from':start_time, 'to':end_time, 'ranges':[range1], 'stepmode':'fixed'}
-                          ]
+	range1 = (105, 105, schedule_offsetfn)
+	demand_schedule = [ {'from':start_time, 'to':end_time, 'ranges':[range1], 'stepmode':'fixed'}
+						]
 
-        order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-                       'interval':30, 'timemode':'drip-poisson'}
+	order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+					'interval':30, 'timemode':'drip-poisson'}
 
 # #        buyers_spec = [('GVWY',10),('SHVR',10),('ZIC',10),('ZIP',10)]
 # #        sellers_spec = buyers_spec
@@ -288,52 +316,52 @@ if __name__ == "__main__":
 # #        sys.exit('Done Now')
 
 
-        
+	
 
-        # run a sequence of trials that exhaustively varies the ratio of four trader types
-        # NB this has weakness of symmetric proportions on buyers/sellers -- combinatorics of varying that are quite nasty
-        
+	# run a sequence of trials that exhaustively varies the ratio of four trader types
+	# NB this has weakness of symmetric proportions on buyers/sellers -- combinatorics of varying that are quite nasty
+	
 
-        n_trader_types = 4
-        equal_ratio_n = 4
-        n_trials_per_ratio = 50
+	n_trader_types = 4
+	equal_ratio_n = 4
+	n_trials_per_ratio = 50
 
-        n_traders = n_trader_types * equal_ratio_n
+	n_traders = n_trader_types * equal_ratio_n
 
-        fname = 'balances_%03d.csv' % equal_ratio_n
+	fname = 'balances_%03d.csv' % equal_ratio_n
 
-        tdump = open(fname, 'w')
+	tdump = open(fname, 'w')
 
-        min_n = 1
+	min_n = 1
 
-        trialnumber = 1
-        trdr_1_n = min_n
-        while trdr_1_n <= n_traders:
-                trdr_2_n = min_n 
-                while trdr_2_n <= n_traders - trdr_1_n:
-                        trdr_3_n = min_n
-                        while trdr_3_n <= n_traders - (trdr_1_n + trdr_2_n):
-                                trdr_4_n = n_traders - (trdr_1_n + trdr_2_n + trdr_3_n)
-                                if trdr_4_n >= min_n:
-                                        buyers_spec = [('GVWY', trdr_1_n), ('SHVR', trdr_2_n),
-                                                       ('ZIC', trdr_3_n), ('ZIP', trdr_4_n)]
-                                        sellers_spec = buyers_spec
-                                        traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
-                                        # print buyers_spec
-                                        trial = 1
-                                        while trial <= n_trials_per_ratio:
-                                                trial_id = 'trial%07d' % trialnumber
-                                                market_session(trial_id, start_time, end_time, traders_spec,
-                                                               order_sched, tdump, False, True)
-                                                tdump.flush()
-                                                trial = trial + 1
-                                                trialnumber = trialnumber + 1
-                                trdr_3_n += 1
-                        trdr_2_n += 1
-                trdr_1_n += 1
-        tdump.close()
-        
-        print(trialnumber)
+	trialnumber = 1
+	trdr_1_n = min_n
+	while trdr_1_n <= n_traders:
+			trdr_2_n = min_n 
+			while trdr_2_n <= n_traders - trdr_1_n:
+					trdr_3_n = min_n
+					while trdr_3_n <= n_traders - (trdr_1_n + trdr_2_n):
+							trdr_4_n = n_traders - (trdr_1_n + trdr_2_n + trdr_3_n)
+							if trdr_4_n >= min_n:
+									buyers_spec = [('GVWY', trdr_1_n), ('SHVR', trdr_2_n),
+													('ZIC', trdr_3_n), ('ZIP', trdr_4_n)]
+									sellers_spec = buyers_spec
+									traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+									# print buyers_spec
+									trial = 1
+									while trial <= n_trials_per_ratio:
+											trial_id = 'trial%07d' % trialnumber
+											market_session(trial_id, start_time, end_time, traders_spec,
+															order_sched, tdump, False, True)
+											tdump.flush()
+											trial = trial + 1
+											trialnumber = trialnumber + 1
+							trdr_3_n += 1
+					trdr_2_n += 1
+			trdr_1_n += 1
+	tdump.close()
+	
+	print(trialnumber)
 
 
 
