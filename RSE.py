@@ -121,41 +121,37 @@ def populate_market(traders_spec, traders, shuffle, verbose):
 
 	return {'n_buyers':n_buyers, 'n_sellers':n_sellers}
 
-def run_exchange():
+def run_exchange(exchange, lob, order_q, trader_qs):
 	return 0
 
-def run_trader():
+def run_trader(trader, lob, trader_q, start_time, duration):
 	return 0
 
 # one session in the market
 def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dumpfile, dump_each_trade, verbose):
 
-
-	# 	t1 = threading.Thread(target=TraderA, args=(lob, q))
-	# 	t2 = threading.Thread(target=TraderB, args=(lob, q))
-	# 	t3 = threading.Thread(target=TraderC, args=(lob, q))
-
-
-	# 	# starting processes 
-	# 	exchange.start()
-	# 	t1.start() 
-	# 	t2.start() 
-	# 	t3.start() 
-
-	# initialise the exchange
-	exchange = Exchange()
-	# lob = {}
-	# order_q = queue.Queue()
-	# ex_thread = threading.Thread(target=run_exchange(), args(exchange, lob, order_q, thread_qs,))
-
-
 	# create a bunch of traders
 	traders = {}
-	#trader_threads = []
+	# trader_threads = []
+    # trader_qs = []
 	trader_stats = populate_market(trader_spec, traders, True, verbose)
 	# # create threads for traders
 	# for i in range(0, len(traders)):
-	#     trader_threads[i] = threading.Thread(target=run_trader(), args=(traders[i], lob, starttime, duration)) 
+    #    trader_qs[i] = queue.Queue()
+	#    trader_threads[i] = threading.Thread(target=run_trader(), args=(traders[i], lob, trader_q, starttime, duration)) 
+
+    
+    
+    
+   	# initialise the exchange
+	exchange = Exchange()
+	# lob = {}
+	# order_q = queue.Queue()
+	# ex_thread = threading.Thread(target=run_exchange(), args(exchange, lob, order_q, trader_qs,))
+ 
+    
+    # # start exchange thread
+    # ex_thread.start()
 
 	# # start trader threads
 	# for thread in trader_threads:
