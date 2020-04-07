@@ -1144,7 +1144,7 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 
                 # if verbose: print('\n\n%s; t=%08.2f (%4.1f/100) ' % (sess_id, time, time_left*100))
 
-                trade = None
+                # trade = None
 
                 [pending_cust_orders, kills] = customer_orders(time, last_update, traders, trader_stats,
                                                  order_schedule, pending_cust_orders, orders_verbose)

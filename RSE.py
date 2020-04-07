@@ -121,37 +121,77 @@ def populate_market(traders_spec, traders, shuffle, verbose):
 
 	return {'n_buyers':n_buyers, 'n_sellers':n_sellers}
 
-def run_exchange(exchange, lob, order_q, trader_qs):
-	return 0
+def run_exchange(exchange, lob, order_q, trader_qs, start_time, duration, process_verbose, lob_verbose):
 
-def run_trader(trader, lob, trader_q, start_time, duration):
+	while((time.time() - start_time) < duration):
+
+		curr_time = (time.time() - start_time) * (600 / duration) 
+		lob = exchange.publish_lob(curr_time, lob_verbose)
+
+		order = order_q.get()
+		trade = exchange.process_order2(curr_time, order, process_verbose)
+
+		if trade is not None:
+			lob = exchange.publish_lob(curr_time, lob_verbose)
+			for q in trader_qs:
+				q.put(trade)
+
+	return 0
+ 
+def run_trader(trader, lob, order_q, trader_q, start_time, duration, respond_verbose, bookkeep_verbose):
+	
+	while((time.time() - start_time) < duration):
+
+		curr_time = (time.time() - start_time) * (600 / duration)
+		time_left =  ((600 / duration) - curr_time) / (600 / duration)
+
+		while trader_q.empty() is False:
+			trade = trader_q.get(block = False)
+			trader.respond(curr_time, lob, trade, respond_verbose)
+			# IF MINE THEN BOOK KEEPING
+			# if trade['party1'] == trader['tid']: trader.bookkeep(trade, order, bookkeep_verbose, curr_time)
+			# if trade['party2'] == trader['tid']: trader.bookkeep(trade, order, bookkeep_verbose, curr_time)
+
+
+		order = trader.getorder(curr_time, time_left, lob)
+
+		if order is not None:
+			if order.otype == 'Ask' and order.price < trader.orders[0].price: sys.exit('Bad ask')
+			if order.otype == 'Bid' and order.price > trader.orders[0].price: sys.exit('Bad bid')
+			trader.n_quotes = 1
+			order_q.put(order)
+
 	return 0
 
 # one session in the market
 def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dumpfile, dump_each_trade, verbose):
+	
+	# initialise the exchange
+	exchange = Exchange()
+	# lob = {}
+	# order_q = queue.Queue()
+	
+	orders_verbose = False
+	lob_verbose = False
+	process_verbose = False
+	respond_verbose = False
+	bookkeep_verbose = False
 
 	# create a bunch of traders
 	traders = {}
 	# trader_threads = []
-    # trader_qs = []
+	# trader_qs = []
 	trader_stats = populate_market(trader_spec, traders, True, verbose)
-	# # create threads for traders
-	# for i in range(0, len(traders)):
-    #    trader_qs[i] = queue.Queue()
-	#    trader_threads[i] = threading.Thread(target=run_trader(), args=(traders[i], lob, trader_q, starttime, duration)) 
 
-    
-    
-    
-   	# initialise the exchange
-	exchange = Exchange()
-	# lob = {}
-	# order_q = queue.Queue()
-	# ex_thread = threading.Thread(target=run_exchange(), args(exchange, lob, order_q, trader_qs,))
+	# # create threads and queues for traders
+	# for i in range(0, len(traders)):
+	#    trader_qs[i] = queue.Queue()
+	#    trader_threads[i] = threading.Thread(target=run_trader(), args=(traders[i], lob, order_q, trader_qs[i], starttime, duration, respond_verbose, bookkeep_verbose)) 
+	
+	# ex_thread = threading.Thread(target=run_exchange(), args(exchange, lob, order_q, trader_qs, starttime, duration, process_verbose, lob_verbose))
  
-    
-    # # start exchange thread
-    # ex_thread.start()
+	# # start exchange thread
+	# ex_thread.start()
 
 	# # start trader threads
 	# for thread in trader_threads:
@@ -166,12 +206,6 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 	last_update = -1.0
 
 	time = starttime
-
-	orders_verbose = False
-	lob_verbose = False
-	process_verbose = False
-	respond_verbose = False
-	bookkeep_verbose = False
 
 	pending_cust_orders = []
 
@@ -216,7 +250,7 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 							# so the counterparties update order lists and blotters
 							traders[trade['party1']].bookkeep(trade, order, bookkeep_verbose, time)
 							traders[trade['party2']].bookkeep(trade, order, bookkeep_verbose, time)
-							if dump_each_trade: trade_stats(sess_id, traders, tdump, time, exchange.publish_lob(time, lob_verbose))
+							if dump_each_trade: trade_stats(sess_id, traders, tdump, time, exchange.publish_lob(time, lob_verbose)) #May need moved somewhere
 
 					# traders respond to whatever happened
 					lob = exchange.publish_lob(time, lob_verbose)
