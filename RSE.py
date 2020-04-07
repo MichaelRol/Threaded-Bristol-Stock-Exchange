@@ -134,7 +134,7 @@ def run_exchange(exchange, lob, order_q, trader_qs, start_time, duration, proces
 		if trade is not None:
 			lob = exchange.publish_lob(curr_time, lob_verbose)
 			for q in trader_qs:
-				q.put(trade)
+				q.put([trade, order])
 
 	return 0
  
@@ -146,11 +146,11 @@ def run_trader(trader, lob, order_q, trader_q, start_time, duration, respond_ver
 		time_left =  ((600 / duration) - curr_time) / (600 / duration)
 
 		while trader_q.empty() is False:
-			trade = trader_q.get(block = False)
+			[trade, order] = trader_q.get(block = False)
 			trader.respond(curr_time, lob, trade, respond_verbose)
 			# IF MINE THEN BOOK KEEPING
-			# if trade['party1'] == trader['tid']: trader.bookkeep(trade, order, bookkeep_verbose, curr_time)
-			# if trade['party2'] == trader['tid']: trader.bookkeep(trade, order, bookkeep_verbose, curr_time)
+			if trade['party1'] == trader['tid']: trader.bookkeep(trade, order, bookkeep_verbose, curr_time)
+			if trade['party2'] == trader['tid']: trader.bookkeep(trade, order, bookkeep_verbose, curr_time)
 
 
 		order = trader.getorder(curr_time, time_left, lob)
