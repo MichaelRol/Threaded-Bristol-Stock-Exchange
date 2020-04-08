@@ -131,6 +131,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
         cancellations = []
 
         if len(pending) < 1:
+                # print("NEW CUST ORDER")
                 # list of pending (to-be-issued) customer orders is empty, so generate a new one
                 new_pending = []
 
@@ -157,6 +158,8 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                         order = Order(tname, ordertype, orderprice, 1, issuetime, -3.14)
                         new_pending.append(order)
         else:
+
+                # print("PENDING ORDER") 
                 # there are pending future orders: issue any whose timestamp is in the past
                 new_pending = []
                 for order in pending:

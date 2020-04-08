@@ -1058,6 +1058,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
         cancellations = []
 
         if len(pending) < 1:
+            
                 # list of pending (to-be-issued) customer orders is empty, so generate a new one
                 new_pending = []
 
@@ -1164,7 +1165,6 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
                 order = traders[tid].getorder(time, time_left, exchange.publish_lob(time, lob_verbose))
 
                 # if verbose: print('Trader Quote: %s' % (order))
-
                 if order != None:
                         if order.otype == 'Ask' and order.price < traders[tid].orders[0].price: sys.exit('Bad ask')
                         if order.otype == 'Bid' and order.price > traders[tid].orders[0].price: sys.exit('Bad bid')
