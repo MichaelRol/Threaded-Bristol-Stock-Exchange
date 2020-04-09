@@ -42,7 +42,6 @@ class Trader:
     def del_order(self, order):
         # this is lazy: assumes each trader has only one customer order with quantity=1, so deleting sole order
         # CHANGE TO DELETE THE HEAD OF THE LIST AND KEEP THE TAIL
-        print("DEL ORDER FOR: " + str(self.tid))
         self.orders = []
 
 
@@ -98,7 +97,7 @@ class Trader_Giveaway(Trader):
                     self.orders[0].otype,
                     quoteprice,
                     self.orders[0].qty,
-                    time, lob['QID'])
+                    time, self.orders[0].qid)
             self.lastquote=order
             return order
 
@@ -115,7 +114,6 @@ class Trader_ZIC(Trader):
         else:
             minprice = lob['bids']['worst']
             maxprice = lob['asks']['worst']
-            qid = lob['QID']
             limit = self.orders[0].price
             otype = self.orders[0].otype
             if otype == 'Bid':
@@ -123,7 +121,7 @@ class Trader_ZIC(Trader):
             else:
                 quoteprice = random.randint(limit, maxprice)
                 # NB should check it == 'Ask' and barf if not
-            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, qid)
+            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].qid)
             self.lastquote = order
         return order
 
@@ -153,7 +151,7 @@ class Trader_Shaver(Trader):
                         quoteprice = limitprice
                 else:
                     quoteprice = lob['asks']['worst']
-            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, lob['QID'])
+            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].qid)
             self.lastquote = order
         return order
 
@@ -188,7 +186,7 @@ class Trader_Sniper(Trader):
                             quoteprice = limitprice
                     else:
                         quoteprice = lob['asks']['worst']
-                order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, lob['QID'])
+                order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].qid)
                 self.lastquote = order
             return order
 
@@ -251,7 +249,7 @@ class Trader_ZIP(Trader):
             quoteprice = int(self.limit * (1 + self.margin))
             self.price = quoteprice
 
-            order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, lob['QID'])
+            order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, self.orders[0].qid)
             self.lastquote = order
         return order
 

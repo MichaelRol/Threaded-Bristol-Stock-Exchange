@@ -126,16 +126,16 @@ def run_exchange(exchange, order_q, trader_qs, start_event, start_time, sess_len
 	start_event.wait()
 	while start_event.isSet():
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
-		lob = exchange.publish_lob(virtual_time, lob_verbose)
+		# lob = exchange.publish_lob(virtual_time, lob_verbose)
 		
 		order = order_q.get()
 		trade = exchange.process_order2(virtual_time, order, process_verbose)
 		
 		if trade is not None:
-			print("TRADE: " + str(trade))
-			lob = exchange.publish_lob(virtual_time, lob_verbose)
+			# print("TRADE: " + str(trade))
+			# lob = exchange.publish_lob(virtual_time, lob_verbose)
 			for q in trader_qs:
-				q.put([trade, order, lob])
+				q.put([trade, order])
 
 	return 0
  
@@ -144,12 +144,13 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 	start_event.wait()
 	
 	while start_event.isSet():
-		time.sleep(0.001)
+		time.sleep(0.02)
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		time_left =  (virtual_end - virtual_time) / virtual_end
 
 		while trader_q.empty() is False:
-			[trade, order, lob] = trader_q.get(block = False)
+			lob = exchange.publish_lob(virtual_time, False)
+			[trade, order] = trader_q.get(block = False)
 			trader.respond(virtual_time, lob, trade, respond_verbose)
 			if trade['party1'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
 			if trade['party2'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
@@ -181,7 +182,6 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 	process_verbose = False
 	respond_verbose = False
 	bookkeep_verbose = False
-	
 	# create a bunch of traders
 	traders = {}
 	trader_threads = []

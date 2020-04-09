@@ -131,7 +131,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
         cancellations = []
 
         if len(pending) < 1:
-                print("NEW CUST ORDER")
+                # print("NEW CUST ORDER")
                 # list of pending (to-be-issued) customer orders is empty, so generate a new one
                 new_pending = []
 
