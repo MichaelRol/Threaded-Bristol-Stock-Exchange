@@ -42,6 +42,7 @@ class Trader:
     def del_order(self, order):
         # this is lazy: assumes each trader has only one customer order with quantity=1, so deleting sole order
         # CHANGE TO DELETE THE HEAD OF THE LIST AND KEEP THE TAIL
+        print("DEL ORDER FOR: " + str(self.tid))
         self.orders = []
 
 

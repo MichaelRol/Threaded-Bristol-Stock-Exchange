@@ -144,6 +144,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 	start_event.wait()
 	
 	while start_event.isSet():
+		time.sleep(0.001)
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		time_left =  (virtual_end - virtual_time) / virtual_end
 
@@ -155,7 +156,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 
 		lob = exchange.publish_lob(virtual_time, False)
 		order = trader.getorder(virtual_time, time_left, lob)
-		print(order)
+		# print(order)
 		if order is not None:
 			if order.otype == 'Ask' and order.price < trader.orders[0].price: sys.exit('Bad ask')
 			if order.otype == 'Bid' and order.price > trader.orders[0].price: sys.exit('Bad bid')
@@ -210,15 +211,13 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 
 	if verbose: print('\n%s;  ' % (sess_id))
 
-	count = 0
 	while time.time() < (start_time + sess_length):
-		if (order_q.empty() == False):
-			continue
+		# if (order_q.empty() == False):
+		# 	continue
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		# distribute customer orders
 		[pending_cust_orders, kills] = customer_orders(virtual_time, last_update, traders, trader_stats,
 											order_schedule, pending_cust_orders, orders_verbose)
-		count += 1
 		# if any newly-issued customer orders mean quotes on the LOB need to be cancelled, kill them
 		if len(kills) > 0 :
 				# if verbose : print('Kills: %s' % (kills))
@@ -228,7 +227,6 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 								# if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
 								exchange.del_order(virtual_time, traders[kill].lastquote, verbose)
 
-	print("COUNT: " + str(count))
 	print("QUEUE: " + str(order_q.qsize()))
 	start_event.clear()
 	# end of an experiment -- dump the tape
