@@ -142,6 +142,8 @@ def run_exchange(exchange, order_q, trader_qs, start_event, start_time, sess_len
 		
 		if trade is not None:
 			completed_coid[order.coid] = True
+			# completed_coid[trade['counter']] = True
+			print("SOMETHING?: " + str(trade['counter']))
 			print("TRADE: >>> " + str(trade))
 			for q in trader_qs:
 				q.put([trade, order])
