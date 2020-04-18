@@ -123,16 +123,25 @@ def populate_market(traders_spec, traders, shuffle, verbose):
 
 def run_exchange(exchange, order_q, trader_qs, start_event, start_time, sess_length, virtual_end, process_verbose, lob_verbose):
 
+	completed_coid = {}
 	start_event.wait()
 	while start_event.isSet():
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		
 		order = order_q.get()
+		if order.coid in completed_coid:	
+			if completed_coid[order.coid] == True:
+				print("CONTINUE")
+				continue
+		else:
+			completed_coid[order.coid] = False
+			
 		# In here must check if order has already been executed
 		print(order)
 		trade = exchange.process_order2(virtual_time, order, process_verbose)
 		
 		if trade is not None:
+			completed_coid[order.coid] = True
 			print("TRADE: >>> " + str(trade))
 			for q in trader_qs:
 				q.put([trade, order])
