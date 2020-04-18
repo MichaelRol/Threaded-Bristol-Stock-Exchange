@@ -3,7 +3,7 @@ import random
 from RSE_msg_classes import Order
 from RSE_sys_consts import rse_sys_maxprice, rse_sys_minprice
 
-def customer_orders(time, last_update, traders, trader_stats, os, pending, verbose):
+def customer_orders(time, cuid, last_update, traders, trader_stats, os, pending, verbose):
 
 
         def sysmin_check(price):
@@ -144,8 +144,9 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                         issuetime = time + issuetimes[t]
                         tname = 'B%02d' % t
                         orderprice = getorderprice(t, sched, n_buyers, mode, issuetime)
-                        order = Order(tname, ordertype, orderprice, 1, issuetime, -3.14)
-                        new_pending.append(order)
+                        order = Order(tname, ordertype, orderprice, 1, issuetime, cuid, -3.14)
+                        new_pending.append(order) 
+                        cuid += 1
                         
                 # supply side (sellers)
                 issuetimes = getissuetimes(n_sellers, os['timemode'], os['interval'], shuffle_times, True)
@@ -155,8 +156,9 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                         issuetime = time + issuetimes[t]
                         tname = 'S%02d' % t
                         orderprice = getorderprice(t, sched, n_sellers, mode, issuetime)
-                        order = Order(tname, ordertype, orderprice, 1, issuetime, -3.14)
+                        order = Order(tname, ordertype, orderprice, 1, issuetime, cuid, -3.14)
                         new_pending.append(order)
+                        cuid += 1
         else:
 
                 # print("PENDING ORDER")  
@@ -176,5 +178,5 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                         else:
                                 # this order stays on the pending list
                                 new_pending.append(order)
-        return [new_pending, cancellations]
+        return [new_pending, cancellations, cuid]
 

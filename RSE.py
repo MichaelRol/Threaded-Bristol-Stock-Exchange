@@ -126,14 +126,14 @@ def run_exchange(exchange, order_q, trader_qs, start_event, start_time, sess_len
 	start_event.wait()
 	while start_event.isSet():
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
-		# lob = exchange.publish_lob(virtual_time, lob_verbose)
 		
 		order = order_q.get()
+		# In here must check if order has already been executed
+		print(order)
 		trade = exchange.process_order2(virtual_time, order, process_verbose)
 		
 		if trade is not None:
-			# print("TRADE: " + str(trade))
-			# lob = exchange.publish_lob(virtual_time, lob_verbose)
+			print("TRADE: >>> " + str(trade))
 			for q in trader_qs:
 				q.put([trade, order])
 
@@ -144,7 +144,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 	start_event.wait()
 	
 	while start_event.isSet():
-		time.sleep(0.02)
+		time.sleep(0.01)
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		time_left =  (virtual_end - virtual_time) / virtual_end
 
@@ -157,7 +157,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 
 		lob = exchange.publish_lob(virtual_time, False)
 		order = trader.getorder(virtual_time, time_left, lob)
-		# print(order)
+
 		if order is not None:
 			if order.otype == 'Ask' and order.price < trader.orders[0].price: sys.exit('Bad ask')
 			if order.otype == 'Bid' and order.price > trader.orders[0].price: sys.exit('Bad bid')
@@ -211,12 +211,14 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 
 	if verbose: print('\n%s;  ' % (sess_id))
 
+	cuid = 0 # Customer order id
+
 	while time.time() < (start_time + sess_length):
 		# if (order_q.empty() == False):
 		# 	continue
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		# distribute customer orders
-		[pending_cust_orders, kills] = customer_orders(virtual_time, last_update, traders, trader_stats,
+		[pending_cust_orders, kills, cuid] = customer_orders(virtual_time, cuid, last_update, traders, trader_stats,
 											order_schedule, pending_cust_orders, orders_verbose)
 		# if any newly-issued customer orders mean quotes on the LOB need to be cancelled, kill them
 		if len(kills) > 0 :

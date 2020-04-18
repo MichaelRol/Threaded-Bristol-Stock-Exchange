@@ -97,7 +97,7 @@ class Trader_Giveaway(Trader):
                     self.orders[0].otype,
                     quoteprice,
                     self.orders[0].qty,
-                    time, self.orders[0].qid)
+                    time, self.orders[0].coid, self.orders[0].toid)
             self.lastquote=order
             return order
 
@@ -121,7 +121,7 @@ class Trader_ZIC(Trader):
             else:
                 quoteprice = random.randint(limit, maxprice)
                 # NB should check it == 'Ask' and barf if not
-            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].qid)
+            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
             self.lastquote = order
         return order
 
@@ -151,7 +151,7 @@ class Trader_Shaver(Trader):
                         quoteprice = limitprice
                 else:
                     quoteprice = lob['asks']['worst']
-            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].qid)
+            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
             self.lastquote = order
         return order
 
@@ -186,7 +186,7 @@ class Trader_Sniper(Trader):
                             quoteprice = limitprice
                     else:
                         quoteprice = lob['asks']['worst']
-                order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].qid)
+                order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
                 self.lastquote = order
             return order
 
@@ -249,7 +249,7 @@ class Trader_ZIP(Trader):
             quoteprice = int(self.limit * (1 + self.margin))
             self.price = quoteprice
 
-            order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, self.orders[0].qid)
+            order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
             self.lastquote = order
         return order
 
@@ -316,6 +316,8 @@ class Trader_ZIP(Trader):
         if lob_best_bid_p is not None:
             # non-empty bid LOB
             lob_best_bid_q = lob['bids']['lob'][-1][1]
+            # print(lob_best_bid_q)
+            print(self.prev_best_bid_q)
             if self.prev_best_bid_p is None:
                 self.prev_best_bid_p = lob_best_bid_p
             elif self.prev_best_bid_p < lob_best_bid_p:
