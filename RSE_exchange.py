@@ -230,7 +230,7 @@ class Exchange(Orderbook):
 								if verbose: print("Ask $%s hits best bid" % oprice)
 								# remove the best bid
 								counterparty = best_bid_tid
-								counter_coid = self.asks.orders.get(counterparty)
+								counter_coid = self.bids.orders[counterparty].coid
 								price = best_bid  # ask crossed bid, so use bid price
 								if verbose: print('counterparty, price', counterparty, price)
 								# delete the bid just crossed, from the exchange's records
