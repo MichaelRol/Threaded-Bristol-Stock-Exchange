@@ -136,18 +136,15 @@ def run_exchange(exchange, order_q, trader_qs, start_event, start_time, sess_len
 		else:
 			completed_coid[order.coid] = False
 			
-		# In here must check if order has already been executed
-		print(order)
 		trade = exchange.process_order2(virtual_time, order, process_verbose)
 		
 		if trade is not None:
 			completed_coid[order.coid] = True
-			# completed_coid[trade['counter']] = True
-			print("SOMETHING?: " + str(trade['counter']))
-			print("TRADE: >>> " + str(trade))
+			completed_coid[trade['counter']] = True
+			print(trade)
 			for q in trader_qs:
 				q.put([trade, order])
-
+	print(completed_coid)
 	return 0
  
 def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, sess_length, virtual_end, respond_verbose, bookkeep_verbose):

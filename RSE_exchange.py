@@ -217,7 +217,7 @@ class Exchange(Orderbook):
 								# bid lifts the best ask
 								if verbose: print("Bid $%s lifts best ask" % oprice)
 								counterparty = best_ask_tid
-								counter_coid = self.bids.orders.get(counterparty)
+								counter_coid = self.asks.orders[counterparty].coid
 								price = best_ask  # bid crossed ask, so use ask price
 								if verbose: print('counterparty, price', counterparty, price)
 								# delete the ask just crossed
@@ -252,6 +252,7 @@ class Exchange(Orderbook):
 											   'party1':counterparty,
 											   'party2':order.tid,
 											   'qty': order.qty,
+											   'coid': order.coid,
 											   'counter': counter_coid 
 											  }
 						self.tape.append(transaction_record)
