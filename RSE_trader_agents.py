@@ -1,5 +1,6 @@
 import sys
 import random
+import threading
 from RSE_msg_classes import Order
 # Trader superclass
 # all Traders have a trader id, bank balance, blotter, and list of orders to execute
@@ -311,13 +312,13 @@ class Trader_ZIP(Trader):
         # what, if anything, has happened on the bid LOB?
         bid_improved = False
         bid_hit = False
+
+
         lob_best_bid_p = lob['bids']['best']
         lob_best_bid_q = None
         if lob_best_bid_p is not None:
             # non-empty bid LOB
             lob_best_bid_q = lob['bids']['lob'][-1][1]
-            # print(lob_best_bid_q)
-            print(self.prev_best_bid_q)
             if self.prev_best_bid_p is None:
                 self.prev_best_bid_p = lob_best_bid_p
             elif self.prev_best_bid_p < lob_best_bid_p:
@@ -342,6 +343,9 @@ class Trader_ZIP(Trader):
         lob_best_ask_p = lob['asks']['best']
         lob_best_ask_q = None
         if lob_best_ask_p is not None:
+
+            thread_id = threading.get_ident()
+            print("self.best: " + str(self.prev_best_bid_q) + " lob_best: " + str(lob_best_bid_q) + " ID: " + str(thread_id))
             # non-empty ask LOB
             lob_best_ask_q = lob['asks']['lob'][0][1]
             if self.prev_best_ask_p is None:
@@ -383,7 +387,7 @@ class Trader_ZIP(Trader):
                 else:
                     # no deal: aim for a target price higher than best bid
                     if ask_improved and self.price > lob_best_ask_p:
-                        if lob_best_bid_p != None:
+                        if lob_best_bid_p is not None:
                             target_price = target_up(lob_best_bid_p)
                         else:
                             target_price = lob['asks']['worst']  # stub quote
@@ -404,7 +408,7 @@ class Trader_ZIP(Trader):
                 else:
                     # no deal: aim for target price lower than best ask
                     if bid_improved and self.price < lob_best_bid_p:
-                        if lob_best_ask_p != None:
+                        if lob_best_ask_p is not None:
                             target_price = target_down(lob_best_ask_p)
                         else:
                             target_price = lob['bids']['worst']  # stub quote
@@ -412,6 +416,8 @@ class Trader_ZIP(Trader):
 
 
             # remember the best LOB data ready for next response
+            thread_id = threading.get_ident()
+            print("self.best: " + str(self.prev_best_bid_q) + " lob_best: " + str(lob_best_bid_q) + " ID: " + str(thread_id))
             self.prev_best_bid_p = lob_best_bid_p
             self.prev_best_bid_q = lob_best_bid_q
             self.prev_best_ask_p = lob_best_ask_p

@@ -131,7 +131,6 @@ def run_exchange(exchange, order_q, trader_qs, start_event, start_time, sess_len
 		order = order_q.get()
 		if order.coid in completed_coid:	
 			if completed_coid[order.coid] == True:
-				print("CONTINUE")
 				continue
 		else:
 			completed_coid[order.coid] = False
@@ -141,10 +140,8 @@ def run_exchange(exchange, order_q, trader_qs, start_event, start_time, sess_len
 		if trade is not None:
 			completed_coid[order.coid] = True
 			completed_coid[trade['counter']] = True
-			print(trade)
 			for q in trader_qs:
 				q.put([trade, order])
-	print(completed_coid)
 	return 0
  
 def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, sess_length, virtual_end, respond_verbose, bookkeep_verbose):
@@ -152,18 +149,23 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 	start_event.wait()
 	
 	while start_event.isSet():
-		time.sleep(0.01)
+		time.sleep(0.05)
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		time_left =  (virtual_end - virtual_time) / virtual_end
 
 		while trader_q.empty() is False:
 			lob = exchange.publish_lob(virtual_time, False)
 			[trade, order] = trader_q.get(block = False)
+			# if trader.ttype == 'ZIP':
+			# 	print(trader.tid + " Resp")
 			trader.respond(virtual_time, lob, trade, respond_verbose)
 			if trade['party1'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
 			if trade['party2'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
 
 		lob = exchange.publish_lob(virtual_time, False)
+		# if trader.ttype == 'ZIP':
+		# 	print(lob['asks'])
+		# 	print(trader.tid + " Get")
 		order = trader.getorder(virtual_time, time_left, lob)
 
 		if order is not None:
@@ -237,7 +239,7 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 								# if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
 								exchange.del_order(virtual_time, traders[kill].lastquote, verbose)
 
-	print("QUEUE: " + str(order_q.qsize()))
+	# print("QUEUE: " + str(order_q.qsize()))
 	start_event.clear()
 	# end of an experiment -- dump the tape
 	exchange.tape_dump('transactions.csv', 'w', 'keep')
@@ -284,6 +286,8 @@ if __name__ == "__main__":
 
 
 	buyers_spec = [('GVWY',2),('SHVR',2),('ZIC',2),('ZIP',2)]
+	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
+
 	sellers_spec = buyers_spec
 	traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 
