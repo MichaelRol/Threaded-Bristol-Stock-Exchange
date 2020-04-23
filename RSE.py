@@ -6,7 +6,7 @@ import queue
 import random
 from RSE_exchange import Exchange
 from RSE_customer_orders import customer_orders
-from RSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP
+from RSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP, Trader_ZIP2
 
 
 # trade_stats()
@@ -65,7 +65,7 @@ def populate_market(traders_spec, traders, shuffle, verbose):
 			elif robottype == 'SNPR':
 					return Trader_Sniper('SNPR', name, 0.00, 0)
 			elif robottype == 'ZIP':
-					return Trader_ZIP('ZIP', name, 0.00, 0)
+					return Trader_ZIP2('ZIP', name, 0.00, 0)
 			else:
 					sys.exit('FATAL: don\'t know robot type %s\n' % robottype)
 
@@ -149,23 +149,18 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 	start_event.wait()
 	
 	while start_event.isSet():
-		time.sleep(0.05)
+		time.sleep(0.04)
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		time_left =  (virtual_end - virtual_time) / virtual_end
 
 		while trader_q.empty() is False:
 			lob = exchange.publish_lob(virtual_time, False)
 			[trade, order] = trader_q.get(block = False)
-			# if trader.ttype == 'ZIP':
-			# 	print(trader.tid + " Resp")
 			trader.respond(virtual_time, lob, trade, respond_verbose)
 			if trade['party1'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
 			if trade['party2'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
 
 		lob = exchange.publish_lob(virtual_time, False)
-		# if trader.ttype == 'ZIP':
-		# 	print(lob['asks'])
-		# 	print(trader.tid + " Get")
 		order = trader.getorder(virtual_time, time_left, lob)
 
 		if order is not None:
@@ -258,7 +253,7 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 if __name__ == "__main__":
 
 	# set up parameters for the session
-	sess_length = 5.0 # Length of the session in seconds
+	sess_length = 10.0 # Length of the session in seconds
 	virtual_end = 600 # Number of virtual seconds for each session
 
 
@@ -285,7 +280,7 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('GVWY',2),('SHVR',2),('ZIC',2),('ZIP',2)]
+	buyers_spec = [('GVWY',4),('SHVR',4),('ZIC',4),('ZIP',4)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
 	sellers_spec = buyers_spec
