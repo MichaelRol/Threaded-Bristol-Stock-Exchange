@@ -74,7 +74,7 @@ class Trader_AA(object):
         # runs Newton-Raphson to find theta_est (the value of theta that makes the 1st 
         # derivative of eqn(3) continuous)
         theta_est = self.theta
-        rightHside = ((self.theta * (self.limit - self.eqlbm)) / float(math.exp(self.theta) - 1));
+        rightHside = ((self.theta * (self.limit - self.eqlbm)) / float(math.exp(self.theta) - 1))
         i = 0
         while i <= self.maxNewtonItter:
             eX = math.exp(theta_est)
@@ -83,7 +83,7 @@ class Trader_AA(object):
             if abs(fofX) <= self.maxNewtonError:
                 break
             dfofX = ((self.eqlbm / eXminOne) - ((eX * self.eqlbm * theta_est) / float(eXminOne * eXminOne)))
-            theta_est = (theta_est - (fofX / float(dfofX)));
+            theta_est = (theta_est - (fofX / float(dfofX)))
             i += 1
         if theta_est == 0.0: theta_est += 0.000001
         return theta_est

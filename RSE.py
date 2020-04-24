@@ -6,7 +6,7 @@ import queue
 import random
 from RSE_exchange import Exchange
 from RSE_customer_orders import customer_orders
-from RSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP
+from RSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP, Trader_AA
 
 
 # trade_stats()
@@ -66,6 +66,8 @@ def populate_market(traders_spec, traders, shuffle, verbose):
 			return Trader_Sniper('SNPR', name, 0.00, 0)
 		elif robottype == 'ZIP':
 			return Trader_ZIP('ZIP', name, 0.00, 0)
+		elif robottype == 'AA':
+			return Trader_AA('AA', name, 0.00, 0)
 		else:
 			sys.exit('FATAL: don\'t know robot type %s\n' % robottype)
 
@@ -138,7 +140,6 @@ def run_exchange(exchange, order_q, trader_qs, start_event, start_time, sess_len
 		trade = exchange.process_order2(virtual_time, order, process_verbose)
 		
 		if trade is not None:
-			print(trade)
 			completed_coid[order.coid] = True
 			completed_coid[trade['counter']] = True
 			for q in trader_qs:
@@ -150,7 +151,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 	start_event.wait()
 	
 	while start_event.isSet():
-		time.sleep(0.01)
+		time.sleep(0.05)
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		time_left =  (virtual_end - virtual_time) / virtual_end
 
@@ -281,7 +282,7 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('GVWY',4),('SHVR',4),('ZIC',4),('ZIP',4)]
+	buyers_spec = [('GVWY',4),('AA',4),('ZIC',4),('ZIP',4)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
 	sellers_spec = buyers_spec
@@ -300,7 +301,7 @@ if __name__ == "__main__":
 	while (trial<(n_trials+1)):
 		trial_id = 'trial%04d' % trial
 		market_session(trial_id, sess_length, virtual_end, traders_spec,
-										order_sched, tdump, False, True)
+										order_sched, tdump, False, False)
 		tdump.flush()
 		trial = trial + 1
 	tdump.close()
