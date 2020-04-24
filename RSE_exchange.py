@@ -26,7 +26,7 @@ class Orderbook_half:
 		# anonymize a lob, strip out order details, format as a sorted list
 		# NB for asks, the sorting should be reversed
 		self.lob_anon = []
-		for price in sorted(self.lob):
+		for price in list(sorted(self.lob)):
 			qty = self.lob[price][0]
 			self.lob_anon.append([price, qty])
 
@@ -38,7 +38,7 @@ class Orderbook_half:
 		# returns lob as a dictionary (i.e., unsorted)
 		# also builds anonymized version (just price/quantity, sorted, as a list) for publishing to traders
 		self.lob = {}
-		for tid in self.orders:
+		for tid in list(self.orders):
 			order = self.orders.get(tid)
 			price = order.price
 			if price in self.lob:

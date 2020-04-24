@@ -170,7 +170,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 			if order.otype == 'Bid' and order.price > trader.orders[0].price: sys.exit('Bad bid')
 			trader.n_quotes = 1
 			order_q.put(order)
-            
+           
 
 	return 0
 

@@ -65,9 +65,10 @@ class Trader:
         self.profitpertime = self.balance/(time - self.birthtime)
 
         if profit < 0 :
-            print(profit)
-            print(trade)
-            print(order)
+            # print(profit)
+            # print(trade)
+            # print(order)
+            # print("A " + self.ttype + " trader has made a loss.")
             sys.exit()
 
         if verbose: print('%s profit=%d balance=%d profit/time=%d' % (outstr, profit, self.balance, self.profitpertime))
@@ -646,7 +647,7 @@ class Trader_AA(Trader):
                                 quoteprice = o_ask - ((o_ask - self.sell_target) / self.offer_change_rate)
 
 
-            order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
+            order = Order(self.tid, self.job, int(quoteprice), self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
             self.lastquote=order
         return order
 
