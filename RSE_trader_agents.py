@@ -13,7 +13,7 @@ class Trader:
         self.tid = tid          # trader unique ID code
         self.balance = balance  # money in the bank
         self.blotter = []       # record of trades executed
-        self.orders = []        # customer orders currently being worked (fixed at 1)
+        self.orders = {}        # customer orders currently being worked (fixed at 1)
         self.n_quotes = 0       # number of quotes live on LOB
         self.willing = 1        # used in ZIP etc
         self.able = 1           # used in ZIP etc
@@ -37,29 +37,41 @@ class Trader:
             response = 'LOB_Cancel'
         else:
             response = 'Proceed'
-        self.orders = [order]
+        self.orders[order.coid] = order
         if verbose : print('add_order < response=%s' % response)
         return response
 
 
-    def del_order(self, order):
+    def del_order(self, coid):
         # this is lazy: assumes each trader has only one customer order with quantity=1, so deleting sole order
         # CHANGE TO DELETE THE HEAD OF THE LIST AND KEEP THE TAIL
-        self.orders = []
+        self.orders.pop(coid)
 
 
     def bookkeep(self, trade, order, verbose, time):
 
         outstr=""
-        for order in self.orders: outstr = outstr + str(order)
+        # for order in self.orders: outstr = outstr + str(order)
+
+        coid = None
+        order_price = None
+
+        if trade['coid'] in self.orders:
+            coid = trade['coid']
+            order_price = self.orders[coid].price
+        elif trade['counter'] in self.orders:
+            coid = trade['counter']
+            order_price = self.orders[coid].price
+        else:
+            print("Welp. I dun gone fucked it up")
 
         self.blotter.append(trade)  # add trade record to trader's blotter
         # NB What follows is **LAZY** -- assumes all orders are quantity=1
         transactionprice = trade['price']
-        if self.orders[0].otype == 'Bid':
-            profit = self.orders[0].price - transactionprice
+        if self.orders[coid].otype == 'Bid':
+            profit = order_price - transactionprice
         else:
-            profit = transactionprice - self.orders[0].price
+            profit = transactionprice - order_price
         self.balance += profit
         self.n_trades += 1
         self.profitpertime = self.balance/(time - self.birthtime)
@@ -68,11 +80,11 @@ class Trader:
             # print(profit)
             # print(trade)
             # print(order)
-            # print("A " + self.ttype + " trader has made a loss.")
+            print(str(trade['coid']) + " " + str(trade['counter']) + " " + str(order.coid) + " " + str(self.orders[0].coid))
             sys.exit()
 
         if verbose: print('%s profit=%d balance=%d profit/time=%d' % (outstr, profit, self.balance, self.profitpertime))
-        self.del_order(order)  # delete the order
+        self.del_order(coid)  # delete the order
 
 
     # specify how trader responds to events in the market
@@ -96,12 +108,13 @@ class Trader_Giveaway(Trader):
         if len(self.orders) < 1:
             order = None
         else:
-            quoteprice = self.orders[0].price
+            coid = max(self.orders.keys())
+            quoteprice = self.orders[coid].price
             order = Order(self.tid,
-                    self.orders[0].otype,
+                    self.orders[coid].otype,
                     quoteprice,
-                    self.orders[0].qty,
-                    time, self.orders[0].coid, self.orders[0].toid)
+                    self.orders[coid].qty,
+                    time, self.orders[coid].coid, self.orders[coid].toid)
             self.lastquote=order
             return order
 
@@ -112,20 +125,22 @@ class Trader_Giveaway(Trader):
 class Trader_ZIC(Trader):
 
     def getorder(self, time, countdown, lob):
+
         if len(self.orders) < 1:
             # no orders: return NULL
             order = None
         else:
+            coid = max(self.orders.keys())
             minprice = lob['bids']['worst']
             maxprice = lob['asks']['worst']
-            limit = self.orders[0].price
-            otype = self.orders[0].otype
+            limit = self.orders[coid].price
+            otype = self.orders[coid].otype
             if otype == 'Bid':
                 quoteprice = random.randint(minprice, limit)
             else:
                 quoteprice = random.randint(limit, maxprice)
                 # NB should check it == 'Ask' and barf if not
-            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
+            order = Order(self.tid, otype, quoteprice, self.orders[coid].qty, time, self.orders[coid].coid, self.orders[coid].toid)
             self.lastquote = order
         return order
 
@@ -139,8 +154,9 @@ class Trader_Shaver(Trader):
         if len(self.orders) < 1:
             order = None
         else:
-            limitprice = self.orders[0].price
-            otype = self.orders[0].otype
+            coid = max(self.orders.keys())
+            limitprice = self.orders[coid].price
+            otype = self.orders[coid].otype
             if otype == 'Bid':
                 if lob['bids']['n'] > 0:
                     quoteprice = lob['bids']['best'] + 1
@@ -155,7 +171,7 @@ class Trader_Shaver(Trader):
                         quoteprice = limitprice
                 else:
                     quoteprice = lob['asks']['worst']
-            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
+            order = Order(self.tid, otype, quoteprice, self.orders[coid].qty, time, self.orders[coid].coid, self.orders[coid].toid)
             self.lastquote = order
         return order
 
@@ -167,32 +183,33 @@ class Trader_Shaver(Trader):
 class Trader_Sniper(Trader):
 
     def getorder(self, time, countdown, lob):
-            lurk_threshold = 0.2
-            shavegrowthrate = 3
-            shave = int(1.0 / (0.01 + countdown / (shavegrowthrate * lurk_threshold)))
-            if (len(self.orders) < 1) or (countdown > lurk_threshold):
-                    order = None
-            else:
-                limitprice = self.orders[0].price
-                otype = self.orders[0].otype
+        lurk_threshold = 0.2
+        shavegrowthrate = 3
+        shave = int(1.0 / (0.01 + countdown / (shavegrowthrate * lurk_threshold)))
+        if (len(self.orders) < 1) or (countdown > lurk_threshold):
+                order = None
+        else:
+            coid = max(self.orders.keys())
+            limitprice = self.orders[coid].price
+            otype = self.orders[coid].otype
 
-                if otype == 'Bid':
-                    if lob['bids']['n'] > 0:
-                        quoteprice = lob['bids']['best'] + shave
-                        if quoteprice > limitprice :
-                            quoteprice = limitprice
-                    else:
-                        quoteprice = lob['bids']['worst']
+            if otype == 'Bid':
+                if lob['bids']['n'] > 0:
+                    quoteprice = lob['bids']['best'] + shave
+                    if quoteprice > limitprice :
+                        quoteprice = limitprice
                 else:
-                    if lob['asks']['n'] > 0:
-                        quoteprice = lob['asks']['best'] - shave
-                        if quoteprice < limitprice:
-                            quoteprice = limitprice
-                    else:
-                        quoteprice = lob['asks']['worst']
-                order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
-                self.lastquote = order
-            return order
+                    quoteprice = lob['bids']['worst']
+            else:
+                if lob['asks']['n'] > 0:
+                    quoteprice = lob['asks']['best'] - shave
+                    if quoteprice < limitprice:
+                        quoteprice = limitprice
+                else:
+                    quoteprice = lob['asks']['worst']
+            order = Order(self.tid, otype, quoteprice, self.orders[coid].qty, time, self.orders[coid].coid, self.orders[coid].toid)
+            self.lastquote = order
+        return order
 
 
 
@@ -234,9 +251,10 @@ class Trader_ZIP(Trader):
             self.active = False
             order = None
         else:
+            coid = max(self.orders.keys())
             self.active = True
-            self.limit = self.orders[0].price
-            self.job = self.orders[0].otype
+            self.limit = self.orders[coid].price
+            self.job = self.orders[coid].otype
             if self.job == 'Bid':
                 # currently a buyer (working a bid order)
                 self.margin = self.margin_buy
@@ -246,7 +264,7 @@ class Trader_ZIP(Trader):
             quoteprice = int(self.limit * (1 + self.margin))
             self.price = quoteprice
 
-            order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
+            order = Order(self.tid, self.job, quoteprice, self.orders[coid].qty, time, self.orders[coid].coid, self.orders[coid].toid)
             self.lastquote = order
         return order
 
@@ -419,7 +437,7 @@ class Trader_AA(Trader):
         self.profitpertime = 0
         self.n_trades = 0
         self.blotter = []
-        self.orders = []
+        self.orders = {}
         self.n_quotes = 0
         self.lastquote = None
 
@@ -607,9 +625,10 @@ class Trader_AA(Trader):
             self.active = False
             return None
         else:
+            coid = max(self.orders.keys())
             self.active = True
-            self.limit = self.orders[0].price
-            self.job = self.orders[0].otype
+            self.limit = self.orders[coid].price
+            self.job = self.orders[coid].otype
             self.calcTarget()
 
             if self.prev_best_bid_p == None:
@@ -647,7 +666,7 @@ class Trader_AA(Trader):
                                 quoteprice = o_ask - ((o_ask - self.sell_target) / self.offer_change_rate)
 
 
-            order = Order(self.tid, self.job, int(quoteprice), self.orders[0].qty, time, self.orders[0].coid, self.orders[0].toid)
+            order = Order(self.tid, self.job, int(quoteprice), self.orders[coid].qty, time, self.orders[coid].coid, self.orders[coid].toid)
             self.lastquote=order
         return order
 

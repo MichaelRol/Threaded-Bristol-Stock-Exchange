@@ -166,8 +166,8 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 		order = trader.getorder(virtual_time, time_left, lob)
 
 		if order is not None:
-			if order.otype == 'Ask' and order.price < trader.orders[0].price: sys.exit('Bad ask')
-			if order.otype == 'Bid' and order.price > trader.orders[0].price: sys.exit('Bad bid')
+			if order.otype == 'Ask' and order.price < trader.orders[order.coid].price: sys.exit('Bad ask')
+			if order.otype == 'Bid' and order.price > trader.orders[order.coid].price: sys.exit('Bad bid')
 			trader.n_quotes = 1
 			order_q.put(order)
            
@@ -235,6 +235,7 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 				if traders[kill].lastquote != None :
 					# if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
 					exchange.del_order(virtual_time, traders[kill].lastquote, verbose)
+		time.sleep(0.05)
 
 	# print("QUEUE: " + str(order_q.qsize()))
 	start_event.clear()
@@ -290,7 +291,7 @@ if __name__ == "__main__":
 
 	# run a sequence of trials, one session per trial
 
-	n_trials = 1
+	n_trials = 50
 	tdump=open('avg_balance.csv','w')
 	trial = 1
 	if n_trials > 1:
