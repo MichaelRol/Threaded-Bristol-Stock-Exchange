@@ -237,7 +237,7 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 				if traders[kill].lastquote != None :
 					# if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
 					exchange.del_order(virtual_time, traders[kill].lastquote, verbose)
-		time.sleep(0.05)
+		time.sleep(0.1)
 
 	# print("QUEUE: " + str(order_q.qsize()))
 	start_event.clear()
@@ -285,7 +285,7 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('GVWY',4),('GDX',4),('ZIC',4),('ZIP',4)]
+	buyers_spec = [('AA',8),('GDX',8),('ZIC',8),('ZIP',8)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
 	sellers_spec = buyers_spec
@@ -293,7 +293,7 @@ if __name__ == "__main__":
 
 	# run a sequence of trials, one session per trial
 
-	n_trials = 10
+	n_trials = 50
 	tdump=open('avg_balance.csv','w')
 	trial = 1
 	if n_trials > 1:

@@ -677,7 +677,6 @@ class Trader_AA(Trader):
         ## Begin nicked from ZIP
 
         # what, if anything, has happened on the bid LOB? Nicked from ZIP..
-        bid_improved = False
         bid_hit = False
 
         lob_best_bid_p = lob['bids']['best']
@@ -687,10 +686,10 @@ class Trader_AA(Trader):
             lob_best_bid_q = lob['bids']['lob'][-1][1]
             if self.prev_best_bid_p is None:
                 self.prev_best_bid_p = lob_best_bid_p
-            elif self.prev_best_bid_p < lob_best_bid_p :
-                # best bid has improved
-                # NB doesn't check if the improvement was by self
-                bid_improved = True
+            # elif self.prev_best_bid_p < lob_best_bid_p :
+            #     # best bid has improved
+            #     # NB doesn't check if the improvement was by self
+            #     bid_improved = True
             elif trade is not None and ((self.prev_best_bid_p > lob_best_bid_p) or ((self.prev_best_bid_p == lob_best_bid_p) and (self.prev_best_bid_q > lob_best_bid_q))):
                 # previous best bid was hit
                 bid_hit = True
@@ -703,7 +702,7 @@ class Trader_AA(Trader):
                 bid_hit = True
 
         # what, if anything, has happened on the ask LOB?
-        ask_improved = False
+        # ask_improved = False
         ask_lifted = False
 
         lob_best_ask_p = lob['asks']['best']
@@ -713,9 +712,9 @@ class Trader_AA(Trader):
             lob_best_ask_q = lob['asks']['lob'][0][1]
             if self.prev_best_ask_p is None:
                 self.prev_best_ask_p = lob_best_ask_p
-            elif self.prev_best_ask_p > lob_best_ask_p :
-                # best ask has improved -- NB doesn't check if the improvement was by self
-                ask_improved = True
+            # elif self.prev_best_ask_p > lob_best_ask_p :
+            #     # best ask has improved -- NB doesn't check if the improvement was by self
+            #     ask_improved = True
             elif trade is not None and ((self.prev_best_ask_p < lob_best_ask_p) or ((self.prev_best_ask_p == lob_best_ask_p) and (self.prev_best_ask_q > lob_best_ask_q))):
                 # trade happened and best ask price has got worse, or stayed same but quantity reduced -- assume previous best ask was lifted
                 ask_lifted = True
@@ -816,7 +815,7 @@ class Trader_GDX(Trader):
     def calc_p_bid(self, m, n):
         best_return = 0
         best_bid = 0
-        second_best_return = 0
+        # second_best_return = 0
         second_best_bid = 0
 
         #first step size of 1 get best and 2nd best
@@ -824,7 +823,7 @@ class Trader_GDX(Trader):
             thing = self.belief_buy(i) * ((self.limit - i) + self.gamma*self.values[m-1][n-1]) + (1-self.belief_buy(i) * self.gamma * self.values[m][n-1])
             if thing > best_return:
                 second_best_bid = best_bid
-                second_best_return = best_return
+                # second_best_return = best_return
                 best_return = thing
                 best_bid = i
 
@@ -846,7 +845,7 @@ class Trader_GDX(Trader):
     def calc_p_ask(self, m, n):
         best_return = 0
         best_ask = self.limit
-        second_best_return = 0
+        # second_best_return = 0
         second_best_ask = self.limit
 
         #first step size of 1 get best and 2nd best
@@ -855,7 +854,7 @@ class Trader_GDX(Trader):
             thing =  self.belief_sell(j) * ((j - self.limit) + self.gamma*self.values[m-1][n-1]) + (1-self.belief_sell(j) * self.gamma * self.values[m][n-1])
             if thing > best_return:
                 second_best_ask = best_ask
-                second_best_return = best_return
+                # second_best_return = best_return
                 best_return = thing
                 best_ask = j
         #always best ask largest one
@@ -911,8 +910,8 @@ class Trader_GDX(Trader):
     def respond(self, time, lob, trade, verbose):
         # what, if anything, has happened on the bid LOB?
         self.outstanding_bids = lob['bids']['lob']
-        bid_improved = False
-        bid_hit = False
+        # bid_improved = False
+        # bid_hit = False
         lob_best_bid_p = lob['bids']['best']
         lob_best_bid_q = None
         if lob_best_bid_p is not None:
@@ -920,27 +919,27 @@ class Trader_GDX(Trader):
             lob_best_bid_q = lob['bids']['lob'][-1][1]
             if self.prev_best_bid_p is None:
                 self.prev_best_bid_p = lob_best_bid_p
-            elif self.prev_best_bid_p < lob_best_bid_p :
-                # best bid has improved
-                # NB doesn't check if the improvement was by self
-                bid_improved = True
+            # elif self.prev_best_bid_p < lob_best_bid_p :
+            #     # best bid has improved
+            #     # NB doesn't check if the improvement was by self
+            #     bid_improved = True
 
             elif trade is not None and ((self.prev_best_bid_p > lob_best_bid_p) or ((self.prev_best_bid_p == lob_best_bid_p) and (self.prev_best_bid_q > lob_best_bid_q))):
                 # previous best bid was hit
                 self.accepted_bids.append(self.prev_best_bid_p)
-                bid_hit = True
-        elif self.prev_best_bid_p is not None:
-            # the bid LOB has been emptied: was it cancelled or hit?
-            last_tape_item = lob['tape'][-1]
-            if last_tape_item['type'] == 'Cancel' :
-                bid_hit = False
-            else:
-                bid_hit = True
+                # bid_hit = True
+        # elif self.prev_best_bid_p is not None:
+        #     # the bid LOB has been emptied: was it cancelled or hit?
+        #     last_tape_item = lob['tape'][-1]
+            # if last_tape_item['type'] == 'Cancel' :
+            #     bid_hit = False
+            # else:
+            #     bid_hit = True
 
         # what, if anything, has happened on the ask LOB?
         self.outstanding_asks = lob['asks']['lob']
-        ask_improved = False
-        ask_lifted = False
+        # ask_improved = False
+        # ask_lifted = False
         lob_best_ask_p = lob['asks']['best']
         lob_best_ask_q = None
         
@@ -949,20 +948,20 @@ class Trader_GDX(Trader):
             lob_best_ask_q = lob['asks']['lob'][0][1]
             if self.prev_best_ask_p is None:
                 self.prev_best_ask_p = lob_best_ask_p
-            elif self.prev_best_ask_p > lob_best_ask_p :
+            # elif self.prev_best_ask_p > lob_best_ask_p :
                 # best ask has improved -- NB doesn't check if the improvement was by self
-                ask_improved = True
+                # ask_improved = True
             elif trade is not None and ((self.prev_best_ask_p < lob_best_ask_p) or ((self.prev_best_ask_p == lob_best_ask_p) and (self.prev_best_ask_q > lob_best_ask_q))):
                 # trade happened and best ask price has got worse, or stayed same but quantity reduced -- assume previous best ask was lifted
                 self.accepted_asks.append(self.prev_best_ask_p)
-                ask_lifted = True
-        elif self.prev_best_ask_p is not None:
+                # ask_lifted = True
+        # elif self.prev_best_ask_p is not None:
             # the ask LOB is empty now but was not previously: canceled or lifted?
-            last_tape_item = lob['tape'][-1]
-            if last_tape_item['type'] == 'Cancel' :
-                ask_lifted = False
-            else:
-                ask_lifted = True
+            # last_tape_item = lob['tape'][-1]
+            # if last_tape_item['type'] == 'Cancel' :
+            #     ask_lifted = False
+            # else:
+            #     ask_lifted = True
 
 
         #populate expected values
@@ -979,7 +978,7 @@ class Trader_GDX(Trader):
                         self.values[m][n] = self.calc_p_ask(m, n)
 
 
-        deal = bid_hit or ask_lifted
+        # deal = bid_hit or ask_lifted
 
 
         # remember the best LOB data ready for next response
