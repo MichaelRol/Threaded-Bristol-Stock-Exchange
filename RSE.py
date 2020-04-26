@@ -171,6 +171,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 			trader.n_quotes = 1
 			order_q.put(order)
            
+	print(str(trader.orders.keys()))
 
 	return 0
 
@@ -291,7 +292,7 @@ if __name__ == "__main__":
 
 	# run a sequence of trials, one session per trial
 
-	n_trials = 50
+	n_trials = 10
 	tdump=open('avg_balance.csv','w')
 	trial = 1
 	if n_trials > 1:

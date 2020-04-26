@@ -38,6 +38,9 @@ class Trader:
         else:
             response = 'Proceed'
         self.orders[order.coid] = order
+        
+        if len(self.orders) > 2:
+            self.orders.pop(min(self.orders.keys()))
         if verbose : print('add_order < response=%s' % response)
         return response
 
@@ -63,7 +66,7 @@ class Trader:
             coid = trade['counter']
             order_price = self.orders[coid].price
         else:
-            print("Welp. I dun gone fucked it up")
+            sys.exit("This is none ideal ngl.")
 
         self.blotter.append(trade)  # add trade record to trader's blotter
         # NB What follows is **LAZY** -- assumes all orders are quantity=1
