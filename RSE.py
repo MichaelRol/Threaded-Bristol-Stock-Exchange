@@ -6,7 +6,7 @@ import queue
 import random
 from RSE_exchange import Exchange
 from RSE_customer_orders import customer_orders
-from RSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP, Trader_AA
+from RSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP, Trader_AA, Trader_GDX
 
 
 # trade_stats()
@@ -68,6 +68,8 @@ def populate_market(traders_spec, traders, shuffle, verbose):
 			return Trader_ZIP('ZIP', name, 0.00, 0)
 		elif robottype == 'AA':
 			return Trader_AA('AA', name, 0.00, 0)
+		elif robottype == 'GDX':
+			return Trader_GDX('GDX', name, 0.00, 0)
 		else:
 			sys.exit('FATAL: don\'t know robot type %s\n' % robottype)
 
@@ -171,7 +173,6 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 			trader.n_quotes = 1
 			order_q.put(order)
            
-	print(str(trader.orders.keys()))
 
 	return 0
 
@@ -284,7 +285,7 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('GVWY',4),('AA',4),('ZIC',4),('ZIP',4)]
+	buyers_spec = [('GVWY',4),('GDX',4),('ZIC',4),('ZIP',4)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
 	sellers_spec = buyers_spec
