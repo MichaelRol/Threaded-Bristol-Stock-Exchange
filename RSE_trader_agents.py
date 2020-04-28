@@ -39,7 +39,7 @@ class Trader:
             response = 'Proceed'
         self.orders[order.coid] = order
         
-        if len(self.orders) > 2:
+        if len(self.orders) > 3:
             self.orders.pop(min(self.orders.keys()))
         if verbose : print('add_order < response=%s' % response)
         return response
@@ -66,6 +66,7 @@ class Trader:
             coid = trade['counter']
             order_price = self.orders[coid].price
         else:
+            print("COID not found")
             sys.exit("This is none ideal ngl.")
 
         self.blotter.append(trade)  # add trade record to trader's blotter

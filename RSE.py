@@ -173,7 +173,6 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 			trader.n_quotes = 1
 			order_q.put(order)
            
-
 	return 0
 
 # one session in the market
@@ -241,6 +240,16 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 
 	# print("QUEUE: " + str(order_q.qsize()))
 	start_event.clear()
+	print(len(threading.enumerate()))
+
+	# start exchange thread
+	ex_thread.join()
+
+	# start trader threads
+	for thread in trader_threads:
+		thread.join()
+
+
 	# end of an experiment -- dump the tape
 	exchange.tape_dump('transactions.csv', 'w', 'keep')
 
@@ -285,7 +294,7 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('AA',8),('GDX',8),('ZIC',8),('ZIP',8)]
+	buyers_spec = [('AA',4),('GDX',4),('ZIC',4),('ZIP',4)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
 	sellers_spec = buyers_spec
@@ -293,7 +302,7 @@ if __name__ == "__main__":
 
 	# run a sequence of trials, one session per trial
 
-	n_trials = 50
+	n_trials = 250
 	tdump=open('avg_balance.csv','w')
 	trial = 1
 	if n_trials > 1:

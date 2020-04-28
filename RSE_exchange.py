@@ -38,7 +38,10 @@ class Orderbook_half:
 		# returns lob as a dictionary (i.e., unsorted)
 		# also builds anonymized version (just price/quantity, sorted, as a list) for publishing to traders
 		self.lob = {}
+		# orders_cp = dict(self.orders)
+		# for tid in list(orders_cp):
 		for tid in list(self.orders):
+		# 	order = orders_cp.get(tid)
 			order = self.orders.get(tid)
 			price = order.price
 			if price in self.lob:
