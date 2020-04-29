@@ -156,17 +156,16 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 		time.sleep(0.05)
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		time_left =  (virtual_end - virtual_time) / virtual_end
-
+		trade = None
+		order = None
 		while trader_q.empty() is False:
-			lob = exchange.publish_lob(virtual_time, False)
 			[trade, order] = trader_q.get(block = False)
-			trader.respond(virtual_time, lob, trade, respond_verbose)
 			if trade['party1'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
 			if trade['party2'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
 
 		lob = exchange.publish_lob(virtual_time, False)
+		trader.respond(virtual_time, lob, trade, respond_verbose)
 		order = trader.getorder(virtual_time, time_left, lob)
-
 		if order is not None:
 			if order.otype == 'Ask' and order.price < trader.orders[order.coid].price: sys.exit('Bad ask')
 			if order.otype == 'Bid' and order.price > trader.orders[order.coid].price: sys.exit('Bad bid')
@@ -294,7 +293,7 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('AA',4),('GDX',4),('ZIC',4),('ZIP',4)]
+	buyers_spec = [('AA',10),('GDX', 10)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
 	sellers_spec = buyers_spec

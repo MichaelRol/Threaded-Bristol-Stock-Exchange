@@ -2155,43 +2155,43 @@ if __name__ == "__main__":
                 tdump.write('%s, %s, %s, %s, ' % ('type', 'balance', 'number of traders', 'profit per trader'))
         tdump.write('\n');
 
-        # buyers_spec = [('GDX', 11), ('ZIP', 11)]
-        # sellers_spec = buyers_spec
-        # traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
-        # print buyers_spec
-        # trial = 1
-        # while trial <= n_trials_per_ratio:
-        #        trial_id = 'trial%07d' % trialnumber
-        #        market_session(trial_id, start_time, end_time, traders_spec,
-        #                       order_sched, tdump, False, True)
-        #        tdump.flush()
-        #        trial = trial + 1
-        #        trialnumber = trialnumber + 1
+        buyers_spec = [('GDX', 10), ('AA', 10)]
+        sellers_spec = buyers_spec
+        traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+        print buyers_spec
+        trial = 1
+        while trial <= n_trials_per_ratio:
+               trial_id = 'trial%07d' % trialnumber
+               market_session(trial_id, start_time, end_time, traders_spec,
+                              order_sched, tdump, False, True)
+               tdump.flush()
+               trial = trial + 1
+               trialnumber = trialnumber + 1
 
-        trdr_1_n = min_n
-        while trdr_1_n <= n_traders:
-               trdr_2_n = min_n
-               while trdr_2_n <= n_traders - trdr_1_n:
-                       trdr_3_n = min_n
-                       while trdr_3_n <= n_traders - (trdr_1_n + trdr_2_n):
-                               trdr_4_n = n_traders - (trdr_1_n + trdr_2_n + trdr_3_n)
-                               if trdr_4_n >= min_n:
-                                       buyers_spec = [('AA', trdr_1_n), ('GDX', trdr_2_n),
-                                                      ('ASAD', trdr_3_n), ('ZIP', trdr_4_n)]
-                                       sellers_spec = buyers_spec
-                                       traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
-                                       # print buyers_spec
-                                       trial = 1
-                                       while trial <= n_trials_per_ratio:
-                                               trial_id = 'trial%07d' % trialnumber
-                                               market_session(trial_id, start_time, end_time, traders_spec,
-                                                              order_sched, tdump, False, True)
-                                               tdump.flush()
-                                               trial = trial + 1
-                                               trialnumber = trialnumber + 1
-                               trdr_3_n += 1
-                       trdr_2_n += 1
-               trdr_1_n += 1
+        # trdr_1_n = min_n
+        # while trdr_1_n <= n_traders:
+        #        trdr_2_n = min_n
+        #        while trdr_2_n <= n_traders - trdr_1_n:
+        #                trdr_3_n = min_n
+        #                while trdr_3_n <= n_traders - (trdr_1_n + trdr_2_n):
+        #                        trdr_4_n = n_traders - (trdr_1_n + trdr_2_n + trdr_3_n)
+        #                        if trdr_4_n >= min_n:
+        #                                buyers_spec = [('AA', trdr_1_n), ('GDX', trdr_2_n),
+        #                                               ('ASAD', trdr_3_n), ('ZIP', trdr_4_n)]
+        #                                sellers_spec = buyers_spec
+        #                                traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+        #                                # print buyers_spec
+        #                                trial = 1
+        #                                while trial <= n_trials_per_ratio:
+        #                                        trial_id = 'trial%07d' % trialnumber
+        #                                        market_session(trial_id, start_time, end_time, traders_spec,
+        #                                                       order_sched, tdump, False, True)
+        #                                        tdump.flush()
+        #                                        trial = trial + 1
+        #                                        trialnumber = trialnumber + 1
+        #                        trdr_3_n += 1
+        #                trdr_2_n += 1
+        #        trdr_1_n += 1
         tdump.close()
 
         print trialnumber
