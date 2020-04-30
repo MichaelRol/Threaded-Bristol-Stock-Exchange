@@ -293,7 +293,7 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('AA',10),('GDX', 10)]
+	buyers_spec = [('GDX',10),('ZIP', 10)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
 	sellers_spec = buyers_spec
