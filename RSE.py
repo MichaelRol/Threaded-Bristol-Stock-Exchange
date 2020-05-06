@@ -21,6 +21,7 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 	# n_traders = len(traders)
 	for t in traders:
 		ttype = traders[t].ttype
+		# print(str(traders[t].ttype) + "     " + str(traders[t].balance))
 		if ttype in trader_types.keys():
 			t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
 			n = trader_types[ttype]['n'] + 1
@@ -293,7 +294,7 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('ZIC',10),('GVWY', 10)]
+	buyers_spec = [('ZIP',10),('ZIC', 10)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
 	sellers_spec = buyers_spec

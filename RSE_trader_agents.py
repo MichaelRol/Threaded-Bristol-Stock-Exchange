@@ -811,6 +811,8 @@ class Trader_GDX(Trader):
 
         if self.first_turn or self.price == -1:
             return None
+        if order is not None:
+            print(order)
         return order
 
     def calc_p_bid(self, m, n):
