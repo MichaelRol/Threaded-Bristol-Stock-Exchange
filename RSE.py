@@ -294,10 +294,10 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('GDX',20)]
+	buyers_spec = [('ZIC',20)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
-	sellers_spec = [('AA',1),('GDX',19)]
+	sellers_spec = [('GVWY',1),('ZIC',19)]
 	traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 
 	# run a sequence of trials, one session per trial
