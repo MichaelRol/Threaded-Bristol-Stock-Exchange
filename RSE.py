@@ -168,6 +168,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 		trader.respond(virtual_time, lob, trade, respond_verbose)
 		order = trader.getorder(virtual_time, time_left, lob)
 		if order is not None:
+			print(order)
 			if order.otype == 'Ask' and order.price < trader.orders[order.coid].price: sys.exit('Bad ask')
 			if order.otype == 'Bid' and order.price > trader.orders[order.coid].price: sys.exit('Bad bid')
 			trader.n_quotes = 1
@@ -294,15 +295,15 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('GVWY',20)]
+	buyers_spec = [('GVWY',4),('ZIP',4)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
-	sellers_spec = [('AA',1),('GVWY',19)]
+	sellers_spec = buyers_spec#[('AA',20)]
 	traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 
 	# run a sequence of trials, one session per trial
 
-	n_trials = 250
+	n_trials = 5
 	tdump=open('avg_balance.csv','w')
 	trial = 1
 	if n_trials > 1:

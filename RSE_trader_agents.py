@@ -80,6 +80,10 @@ class Trader:
         self.n_trades += 1
         self.profitpertime = self.balance/(time - self.birthtime)
 
+        if self.ttype == "GVWY":
+            print("Order price: " + str(order_price) + ", Trade Price: " + str(transactionprice) + ", Profit: " + str(profit))
+
+
         if profit < 0 :
             # print(profit)
             # print(trade)
