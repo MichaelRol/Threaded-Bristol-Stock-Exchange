@@ -16,12 +16,9 @@ from RSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Tra
 # between successive calls, but that does make it inefficient as it has to
 # re-analyse the entire set of traders on each call
 def trade_stats(expid, traders, dumpfile, time, lob):
-	
 	trader_types = {}
-	# n_traders = len(traders)
 	for t in traders:
 		ttype = traders[t].ttype
-		# print(str(traders[t].ttype) + "     " + str(traders[t].balance))
 		if ttype in trader_types.keys():
 			t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
 			n = trader_types[ttype]['n'] + 1
@@ -29,7 +26,6 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 			t_balance = traders[t].balance
 			n = 1
 		trader_types[ttype] = {'n':n, 'balance_sum':t_balance}
-
 
 	dumpfile.write('%s, %06d, ' % (expid, time))
 	for ttype in sorted(list(trader_types.keys())):
@@ -168,7 +164,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 		trader.respond(virtual_time, lob, trade, respond_verbose)
 		order = trader.getorder(virtual_time, time_left, lob)
 		if order is not None:
-			print(order)
+			# print(order)
 			if order.otype == 'Ask' and order.price < trader.orders[order.coid].price: sys.exit('Bad ask')
 			if order.otype == 'Bid' and order.price > trader.orders[order.coid].price: sys.exit('Bad bid')
 			trader.n_quotes = 1
@@ -295,7 +291,7 @@ if __name__ == "__main__":
 					'interval':30, 'timemode':'drip-poisson'}
 
 
-	buyers_spec = [('GVWY',4),('ZIP',4)]
+	buyers_spec = [('GVWY',10),('ZIP',10)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
 	sellers_spec = buyers_spec#[('AA',20)]
@@ -303,7 +299,7 @@ if __name__ == "__main__":
 
 	# run a sequence of trials, one session per trial
 
-	n_trials = 5
+	n_trials = 15
 	tdump=open('avg_balance.csv','w')
 	trial = 1
 	if n_trials > 1:
