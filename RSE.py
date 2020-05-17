@@ -292,19 +292,19 @@ if __name__ == "__main__":
 		return int(round(offset, 0))
 			
 
-	rangeS = (10, 50, schedule_offsetfn)
+	rangeS = (150, 200, schedule_offsetfn)
 	supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
 						]
 
-	rangeD = (25, 35, schedule_offsetfn)
+	rangeD = (150, 200, schedule_offsetfn)
 	demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
 						]
 
 	order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-					'interval':30, 'timemode':'drip-poisson'}
+					'interval':30, 'timemode':'periodic'}
 
 	(est_x, est_y) = calc_est_eq(rangeS, rangeD)
-	
+
 	buyers_spec = [('ZIP',10),('AA', 10)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
