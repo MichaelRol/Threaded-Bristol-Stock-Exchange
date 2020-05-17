@@ -308,7 +308,7 @@ if __name__ == "__main__":
 	n_schedules_per_ratio = 25
 	trialnumber = 1
 
-	for ratio in ratios:
+	for ratio in values:
 		trdr_1_n = int(ratio[0])
 		trdr_2_n = int(ratio[1])
 		trdr_3_n = int(ratio[2])
