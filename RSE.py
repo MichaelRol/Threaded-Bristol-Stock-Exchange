@@ -44,8 +44,21 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 	dumpfile.write('\n')
 
 
+def calc_est_eq(rangeS, rangeD):
+	
+	x1 = 1
+	y1 = rangeD[1]
+	x2 = 20
+	y2 =  rangeD[0]
+	x3 = 1
+	y3 = rangeS[0]  
+	x4 = 20
+	y4 = rangeS[1]
 
-
+	x = ((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4))
+	y = ((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4))
+	
+	return(x, y)
 
 # create a bunch of traders from traders_spec
 # returns tuple (n_buyers, n_sellers)
@@ -279,27 +292,28 @@ if __name__ == "__main__":
 		return int(round(offset, 0))
 			
 
-	range1 = (95, 95, schedule_offsetfn)
-	supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[range1], 'stepmode':'fixed'}
+	rangeS = (10, 50, schedule_offsetfn)
+	supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
 						]
 
-	range1 = (105, 105, schedule_offsetfn)
-	demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[range1], 'stepmode':'fixed'}
+	rangeD = (25, 35, schedule_offsetfn)
+	demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
 						]
 
 	order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
 					'interval':30, 'timemode':'drip-poisson'}
 
-
-	buyers_spec = [('GVWY',10),('ZIP',10)]
+	(est_x, est_y) = calc_est_eq(rangeS, rangeD)
+	
+	buyers_spec = [('ZIP',10),('AA', 10)]
 	# buyers_spec = [('ZIC',10),('SHVR',10),('GVWY',10)]
 
-	sellers_spec = buyers_spec#[('AA',20)]
+	sellers_spec = buyers_spec#[('ZIP',19),('AA',1)]
 	traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 
 	# run a sequence of trials, one session per trial
 
-	n_trials = 15
+	n_trials = 50
 	tdump=open('avg_balance.csv','w')
 	trial = 1
 	if n_trials > 1:
