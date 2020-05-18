@@ -299,10 +299,10 @@ if __name__ == "__main__":
 		for row in reader:
 			ratios.append(row)
 
-	values = ratios[90*exp:90*exp+90]
+	values = ratios[49*exp:49*exp+49]
 
 	if exp == 19:
-		values = ratios[1710:]
+		values = ratios[980:]
 
 	n_trials_per_ratio = 20
 	n_schedules_per_ratio = 25
