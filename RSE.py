@@ -164,7 +164,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 	start_event.wait()
 	
 	while start_event.isSet():
-		time.sleep(0.02)
+		time.sleep(0.04)
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		time_left =  (virtual_end - virtual_time) / virtual_end
 		trade = None
@@ -251,7 +251,7 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 
 	# print("QUEUE: " + str(order_q.qsize()))
 	start_event.clear()
-	print(len(threading.enumerate()))
+	# print(len(threading.enumerate()))
 
 	# start exchange thread
 	ex_thread.join()
@@ -292,7 +292,7 @@ if __name__ == "__main__":
 		return int(round(offset, 0))
 	
 	
-	exp = 0
+	exp = int(sys.argv[1])
 	ratios = []
 	with open('input.csv', newline = '') as csvfile:
 		reader = csv.reader(csvfile, delimiter=',')
