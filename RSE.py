@@ -164,7 +164,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 	start_event.wait()
 	
 	while start_event.isSet():
-		time.sleep(0.02)
+		time.sleep(0.01)
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		time_left =  (virtual_end - virtual_time) / virtual_end
 		trade = None
@@ -251,12 +251,12 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 
 	# print("QUEUE: " + str(order_q.qsize()))
 	start_event.clear()
-	# print(len(threading.enumerate()))
+	len_threads = len(threading.enumerate())
 
-	# start exchange thread
+	# close exchange thread
 	ex_thread.join()
 
-	# start trader threads
+	# close trader threads
 	for thread in trader_threads:
 		thread.join()
 
@@ -266,8 +266,10 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 
 
 	# write trade_stats for this experiment NB end-of-session summary only
-	trade_stats(sess_id, traders, tdump, virtual_end, exchange.publish_lob(virtual_end, lob_verbose))
+	if len_threads == len(traders) + 2:
+		trade_stats(sess_id, traders, tdump, virtual_end, exchange.publish_lob(virtual_end, lob_verbose))
 
+	return len_threads
 
 
 #############################
@@ -340,8 +342,16 @@ if __name__ == "__main__":
 			trial = 1
 			while trial <= n_trials_per_ratio:
 				trial_id = 'trial%07d' % trialnumber
-				market_session(trial_id, sess_length, virtual_end, traders_spec,
-								order_sched, tdump, False, False)
+				try:
+					num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
+									order_sched, tdump, False, False)
+					
+					if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n) * 2 + 2:
+						trial = trial - 1
+						trialnumber = trialnumber - 1
+				except:
+					trial = trial - 1
+					trialnumber = trialnumber - 1
 				tdump.flush()
 				trial = trial + 1
 				trialnumber = trialnumber + 1
