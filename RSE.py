@@ -300,17 +300,17 @@ if __name__ == "__main__":
 		return int(round(offset, 0))
 	
 	
-	exp = int(sys.argv[1])
+	server = int(sys.argv[1])
 	ratios = []
 	with open('input.csv', newline = '') as csvfile:
 		reader = csv.reader(csvfile, delimiter=',')
 		for row in reader:
 			ratios.append(row)
 
-	values = ratios[49*exp:49*exp+49]
+	values = ratios[49*server:49*server+49]
 
-	if exp == 19:
-		values = ratios[980:]
+	if server == 19:
+		values = ratios[932:]
 
 	n_trials_per_ratio = 20
 	n_schedules_per_ratio = 25
@@ -322,7 +322,7 @@ if __name__ == "__main__":
 		trdr_3_n = int(ratio[2])
 		trdr_4_n = int(ratio[3])
 
-		fname = 'simple-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n)
+		fname = 'Results/'+str(server)+'/simple-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n)
 
 		tdump = open(fname, 'w')
 		for _ in range(0, n_schedules_per_ratio):
