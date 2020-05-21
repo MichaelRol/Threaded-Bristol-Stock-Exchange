@@ -136,12 +136,16 @@ def populate_market(traders_spec, traders, shuffle, verbose):
 
 	return {'n_buyers':n_buyers, 'n_sellers':n_sellers}
 
-def run_exchange(exchange, order_q, trader_qs, start_event, start_time, sess_length, virtual_end, process_verbose, lob_verbose):
+def run_exchange(exchange, order_q, trader_qs, kill_q, start_event, start_time, sess_length, virtual_end, process_verbose, lob_verbose):
 
 	completed_coid = {}
 	start_event.wait()
 	while start_event.isSet():
+
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
+		
+		while kill_q.empty() is False:
+			exchange.del_order(virtual_time, kill_q.get(), False)
 		
 		order = order_q.get()
 		if order.coid in completed_coid:	
@@ -192,7 +196,8 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 	# initialise the exchange
 	exchange = Exchange()
 	order_q = queue.Queue()
-	
+	kill_q = queue.Queue()
+
 	start_time = time.time()
 	start_event = threading.Event()
 
@@ -213,7 +218,7 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 		tid = list(traders.keys())[i]
 		trader_threads.append(threading.Thread(target=run_trader, args=(traders[tid], exchange, order_q, trader_qs[i], start_event, start_time, sess_length, virtual_end, respond_verbose, bookkeep_verbose))) 
 	
-	ex_thread = threading.Thread(target=run_exchange, args=(exchange, order_q, trader_qs, start_event, start_time, sess_length, virtual_end, process_verbose, lob_verbose))
+	ex_thread = threading.Thread(target=run_exchange, args=(exchange, order_q, trader_qs, kill_q, start_event, start_time, sess_length, virtual_end, process_verbose, lob_verbose))
  
 	# start exchange thread
 	ex_thread.start()
@@ -245,9 +250,10 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 			for kill in kills :
 				# if verbose : print('lastquote=%s' % traders[kill].lastquote)
 				if traders[kill].lastquote != None :
+					kill_q.put(traders[kill].lastquote)
 					# if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
-					exchange.del_order(virtual_time, traders[kill].lastquote, verbose)
-		time.sleep(0.05)
+					# exchange.del_order(virtual_time, traders[kill].lastquote, verbose)
+		time.sleep(0.01)
 
 	# print("QUEUE: " + str(order_q.qsize()))
 	start_event.clear()
@@ -347,6 +353,7 @@ if __name__ == "__main__":
 									order_sched, tdump, False, False)
 					
 					if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n) * 2 + 2:
+						print("Thread count: " + str(num_threads))
 						trial = trial - 1
 						trialnumber = trialnumber - 1
 				except:
