@@ -357,6 +357,7 @@ if __name__ == "__main__":
 						trial = trial - 1
 						trialnumber = trialnumber - 1
 				except:
+					## Maybe raise flag here to stop still running threads?
 					trial = trial - 1
 					trialnumber = trialnumber - 1
 				tdump.flush()
