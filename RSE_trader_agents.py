@@ -741,12 +741,12 @@ class Trader_AA(Trader):
         ## End nicked from ZIP
 
         if deal:
-            if trade is not None:
-                self.previous_transactions.append(trade['price'])
-                if self.sell_target == None:
-                        self.sell_target = trade['price']
-                if self.buy_target == None:
-                        self.buy_target = trade['price']
+            # if trade is not None:
+            self.previous_transactions.append(trade['price'])
+            if self.sell_target == None:
+                    self.sell_target = trade['price']
+            if self.buy_target == None:
+                    self.buy_target = trade['price']
             self.calcEq()
             self.calcAlpha()
             self.calcTheta()
