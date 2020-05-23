@@ -173,13 +173,14 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 		time_left =  (virtual_end - virtual_time) / virtual_end
 		trade = None
 		order = None
+		lob = exchange.publish_lob(virtual_time, False)
+		trader.respond(virtual_time, lob, trade, respond_verbose)
 		while trader_q.empty() is False:
 			[trade, order] = trader_q.get(block = False)
 			if trade['party1'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
 			if trade['party2'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
+			trader.respond(virtual_time, lob, trade, respond_verbose)
 
-		lob = exchange.publish_lob(virtual_time, False)
-		trader.respond(virtual_time, lob, trade, respond_verbose)
 		order = trader.getorder(virtual_time, time_left, lob)
 		if order is not None:
 			# print(order)
