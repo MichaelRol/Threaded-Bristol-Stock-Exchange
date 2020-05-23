@@ -174,6 +174,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 		trade = None
 		order = None
 		lob = exchange.publish_lob(virtual_time, False)
+		trader.respond(virtual_time, lob, trade, respond_verbose)
 		while trader_q.empty() is False:
 			[trade, order] = trader_q.get(block = False)
 			if trade['party1'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
