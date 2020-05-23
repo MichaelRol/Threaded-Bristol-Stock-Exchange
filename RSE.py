@@ -307,7 +307,7 @@ if __name__ == "__main__":
 		for row in reader:
 			ratios.append(row)
 
-	values = ratios[49*server:49*server+49]
+	values = ratios[921:49*server+49]
 
 	if server == 19:
 		values = ratios[932:]
