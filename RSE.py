@@ -192,7 +192,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 	return 0
 
 # one session in the market
-def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedule, dumpfile, dump_each_trade, verbose):
+def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedule, dumpfile, dump_each_trade, start_event, verbose):
 	
 	# initialise the exchange
 	exchange = Exchange()
@@ -200,7 +200,7 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 	kill_q = queue.Queue()
 
 	start_time = time.time()
-	start_event = threading.Event()
+	
 
 	orders_verbose = False
 	lob_verbose = False
@@ -350,18 +350,23 @@ if __name__ == "__main__":
 			trial = 1
 			while trial <= n_trials_per_ratio:
 				trial_id = 'trial%07d' % trialnumber
+				start_event = threading.Event()
 				try:
 					num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
-									order_sched, tdump, False, False)
+									order_sched, tdump, False, start_event, False)
 					
 					if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n) * 2 + 2:
 						# print("Thread count: " + str(num_threads))
 						trial = trial - 1
 						trialnumber = trialnumber - 1
+						start_event.clear()
+						time.sleep(0.5)
 				except:
 					## Maybe raise flag here to stop still running threads?
 					trial = trial - 1
 					trialnumber = trialnumber - 1
+					start_event.clear()
+					time.sleep(0.5)
 				tdump.flush()
 				trial = trial + 1
 				trialnumber = trialnumber + 1
