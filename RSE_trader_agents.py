@@ -336,7 +336,7 @@ class Trader_ZIP(Trader):
         lob_best_bid_q = None
         if lob_best_bid_p is not None:
             # non-empty bid LOB
-            lob_best_bid_q = 1#lob['bids']['lob'][-1][1]
+            lob_best_bid_q = 1
             if self.prev_best_bid_p is None:
                 self.prev_best_bid_p = lob_best_bid_p
             elif self.prev_best_bid_p < lob_best_bid_p:
@@ -362,7 +362,7 @@ class Trader_ZIP(Trader):
         lob_best_ask_q = None
         if lob_best_ask_p is not None:
             # non-empty ask LOB
-            lob_best_ask_q = 1#lob['asks']['lob'][0][1]
+            lob_best_ask_q = 1
             if self.prev_best_ask_p is None:
                 self.prev_best_ask_p = lob_best_ask_p
             elif self.prev_best_ask_p > lob_best_ask_p:
@@ -688,7 +688,7 @@ class Trader_AA(Trader):
         lob_best_bid_q = None
         if lob_best_bid_p is not None:
             # non-empty bid LOB
-            lob_best_bid_q = 1#lob['bids']['lob'][-1][1]
+            lob_best_bid_q = 1
             if self.prev_best_bid_p is None:
                 self.prev_best_bid_p = lob_best_bid_p
             # elif self.prev_best_bid_p < lob_best_bid_p :
@@ -714,7 +714,7 @@ class Trader_AA(Trader):
         lob_best_ask_q = None
         if lob_best_ask_p is not None:
             # non-empty ask LOB
-            lob_best_ask_q = 1#lob['asks']['lob'][0][1]
+            lob_best_ask_q = 1
             if self.prev_best_ask_p is None:
                 self.prev_best_ask_p = lob_best_ask_p
             # elif self.prev_best_ask_p > lob_best_ask_p :
@@ -924,7 +924,7 @@ class Trader_GDX(Trader):
         lob_best_bid_q = None
         if lob_best_bid_p is not None:
             # non-empty bid LOB
-            lob_best_bid_q = 1#lob['bids']['lob'][-1][1]
+            lob_best_bid_q = 1
             if self.prev_best_bid_p is None:
                 self.prev_best_bid_p = lob_best_bid_p
             # elif self.prev_best_bid_p < lob_best_bid_p :
@@ -953,7 +953,7 @@ class Trader_GDX(Trader):
         
         if lob_best_ask_p is not None:
             # non-empty ask LOB
-            lob_best_ask_q = 1#lob['asks']['lob'][0][1]
+            lob_best_ask_q = 1
             if self.prev_best_ask_p is None:
                 self.prev_best_ask_p = lob_best_ask_p
             # elif self.prev_best_ask_p > lob_best_ask_p :

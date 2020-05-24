@@ -198,6 +198,30 @@ class Exchange(Orderbook):
 			# neither bid nor ask?
 			sys.exit('bad order type in del_quote()')
 
+	# this returns the LOB data "published" by the exchange,
+	# i.e., what is accessible to the traders
+	def publish_lob(self, time, verbose):
+		public_data = {}
+		public_data['time'] = time
+		public_data['bids'] = {'best':self.bids.best_price,
+								'worst':self.bids.worstprice,
+								'n': self.bids.n_orders,
+								'lob':self.bids.lob_anon}
+		public_data['asks'] = {'best':self.asks.best_price,
+								'worst':self.asks.worstprice,
+								'n': self.asks.n_orders,
+								'lob':self.asks.lob_anon}
+		public_data['QID'] = self.quote_id
+		public_data['tape'] = self.tape
+		if verbose:
+			print('publish_lob: t=%d' % time)
+			print('BID_lob=%s' % public_data['bids']['lob'])
+			# print('best=%s; worst=%s; n=%s ' % (self.bids.best_price, self.bids.worstprice, self.bids.n_orders))
+			print('ASK_lob=%s' % public_data['asks']['lob'])
+			# print('qid=%d' % self.quote_id)
+
+		return public_data
+
 
 
 	def process_order2(self, time, order, verbose):
@@ -246,6 +270,8 @@ class Exchange(Orderbook):
 		# NB at this point we have deleted the order from the exchange's records
 		# but the two traders concerned still have to be notified
 		if verbose: print('counterparty %s' % counterparty)
+
+		lob = self.publish_lob(time, False)
 		if counterparty != None:
 			# process the trade
 			if verbose: print('>>>>>>>>>>>>>>>>>TRADE t=%5.2f $%d %s %s' % (time, price, counterparty, order.tid))
@@ -259,9 +285,9 @@ class Exchange(Orderbook):
 									'counter': counter_coid 
 									}
 			self.tape.append(transaction_record)
-			return transaction_record
+			return (transaction_record, lob)
 		else:
-			return None
+			return (None, lob)
 
 
 
@@ -275,27 +301,4 @@ class Exchange(Orderbook):
 			self.tape = []
 
 
-	# this returns the LOB data "published" by the exchange,
-	# i.e., what is accessible to the traders
-	def publish_lob(self, time, verbose):
-		public_data = {}
-		public_data['time'] = time
-		public_data['bids'] = {'best':self.bids.best_price,
-								'worst':self.bids.worstprice,
-								'n': self.bids.n_orders,
-								'lob':self.bids.lob_anon}
-		public_data['asks'] = {'best':self.asks.best_price,
-								'worst':self.asks.worstprice,
-								'n': self.asks.n_orders,
-								'lob':self.asks.lob_anon}
-		public_data['QID'] = self.quote_id
-		public_data['tape'] = self.tape
-		if verbose:
-			print('publish_lob: t=%d' % time)
-			print('BID_lob=%s' % public_data['bids']['lob'])
-			# print('best=%s; worst=%s; n=%s ' % (self.bids.best_price, self.bids.worstprice, self.bids.n_orders))
-			print('ASK_lob=%s' % public_data['asks']['lob'])
-			# print('qid=%d' % self.quote_id)
-
-		return public_data
 
