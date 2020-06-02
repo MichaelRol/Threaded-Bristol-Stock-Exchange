@@ -49,6 +49,8 @@ import sys
 import math
 import random
 import csv
+from time import time
+import gc
 
 
 bse_sys_minprice = 1  # minimum price in the system, in cents/pennies
@@ -1840,10 +1842,14 @@ if __name__ == "__main__":
             
             trial = 1
             while trial <= n_trials_per_ratio:
+                gc.collect()
+                
+                start = time()
                 trial_id = 'trial%07d' % trialnumber
                 
                 market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
-  
+                end = time()
+                print(end-start)
                 tdump.flush()
                 trial = trial + 1
                 trialnumber = trialnumber + 1
