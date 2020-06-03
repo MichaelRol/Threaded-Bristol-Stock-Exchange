@@ -137,7 +137,6 @@ def customer_orders(time, coid, last_update, traders, trader_stats, os, pending,
 
             # demand side (buyers)
             issuetimes = getissuetimes(n_buyers, os['timemode'], os['interval'], shuffle_times, True)
-            
             ordertype = 'Bid'
             (sched, mode) = getschedmode(time, os['dem'])             
             for t in range(n_buyers):
