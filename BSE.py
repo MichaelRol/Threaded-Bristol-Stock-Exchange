@@ -1817,7 +1817,7 @@ if __name__ == "__main__":
         trdr_3_n = int(ratio[2])
         trdr_4_n = int(ratio[3])
 
-        fname = 'Results/'+str(server)+'/simple-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n)
+        fname = 'Results/bse-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n)
 
         tdump = open(fname, 'w')
         for _ in range(0, n_schedules_per_ratio):
