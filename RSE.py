@@ -304,73 +304,73 @@ if __name__ == "__main__":
 	
 	server = int(sys.argv[1])
 	ratios = []
-	with open('input.csv', newline = '') as csvfile:
+	with open(str(server)+'.csv', newline = '') as csvfile:
 		reader = csv.reader(csvfile, delimiter=',')
 		for row in reader:
 			ratios.append(row)
 
 
-	values = ratios[49*server:49*server+49]
+	# values = ratios[49*server:49*server+49]
 
-	if server == 19:
-		values = ratios[49*server:]
+	# if server == 19:
+	# 	values = ratios[49*server:]
 
-	n_trials_per_ratio = 30
+	n_trials_per_ratio = 100
 	n_schedules_per_ratio = 10
 	trialnumber = 1
-	intervals = [30, 60, 150, 300]
-	for interval in intervals:
-		for ratio in values:
-			trdr_1_n = int(ratio[0])
-			trdr_2_n = int(ratio[1])
-			trdr_3_n = int(ratio[2])
-			trdr_4_n = int(ratio[3])
+	# intervals = [30, 60, 150, 300]
+	# for interval in intervals:
+	for ratio in ratios:
+		trdr_1_n = int(ratio[0])
+		trdr_2_n = int(ratio[1])
+		trdr_3_n = int(ratio[2])
+		trdr_4_n = int(ratio[3])
 
-			fname = 'Results/'+str(interval)+'/'+str(server)+'/simple-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n)
+		fname = 'Results/'+str(server)+'/%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n)
 
-			tdump = open(fname, 'w')
-			for _ in range(0, n_schedules_per_ratio):
-				range_max = random.randint(100,200)
-				range_min = random.randint(1, 100)
-				rangeS = (range_min, range_max, schedule_offsetfn)
-				supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
-									]
+		tdump = open(fname, 'w')
+		for _ in range(0, n_schedules_per_ratio):
+			range_max = random.randint(100,200)
+			range_min = random.randint(1, 100)
+			rangeS = (range_min, range_max, schedule_offsetfn)
+			supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
+								]
 
-				rangeD = (range_min, range_max, schedule_offsetfn)
-				demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
-									]
+			rangeD = (range_min, range_max, schedule_offsetfn)
+			demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
+								]
 
-				order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-								'interval':interval, 'timemode':'periodic'}
+			order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+							'interval':30, 'timemode':'periodic'}
+		
+			buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
+							('GDX', trdr_3_n), ('AA', trdr_4_n)]
+
+			sellers_spec = buyers_spec
+			traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 			
-				buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
-								('GDX', trdr_3_n), ('AA', trdr_4_n)]
-
-				sellers_spec = buyers_spec
-				traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
-				
-				trial = 1
-				while trial <= n_trials_per_ratio:
-					trial_id = 'trial%07d' % trialnumber
-					start_event = threading.Event()
-					try:
-						num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
-										order_sched, tdump, False, start_event, False)
-						
-						if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n) * 2 + 2:
-							trial = trial - 1
-							trialnumber = trialnumber - 1
-							start_event.clear()
-							time.sleep(0.5)
-					except:
+			trial = 1
+			while trial <= n_trials_per_ratio:
+				trial_id = 'trial%07d' % trialnumber
+				start_event = threading.Event()
+				try:
+					num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
+									order_sched, tdump, False, start_event, False)
+					
+					if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n) * 2 + 2:
 						trial = trial - 1
 						trialnumber = trialnumber - 1
 						start_event.clear()
 						time.sleep(0.5)
-					tdump.flush()
-					trial = trial + 1
-					trialnumber = trialnumber + 1
-			tdump.close()
+				except:
+					trial = trial - 1
+					trialnumber = trialnumber - 1
+					start_event.clear()
+					time.sleep(0.5)
+				tdump.flush()
+				trial = trial + 1
+				trialnumber = trialnumber + 1
+		tdump.close()
 
 
 	# run a sequence of trials, one session per trial
