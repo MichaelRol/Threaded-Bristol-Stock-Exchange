@@ -22,18 +22,21 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 		ttype = traders[t].ttype
 		if ttype in trader_types.keys():
 			t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
+			t_trades = trader_types[ttype]['trades_sum'] + traders[t].n_trades
 			n = trader_types[ttype]['n'] + 1
 		else:
 			t_balance = traders[t].balance
-			n = 1
-		trader_types[ttype] = {'n':n, 'balance_sum':t_balance}
+			n = 1 
+			t_trades = traders[t].n_trades
+		trader_types[ttype] = {'n':n, 'balance_sum':t_balance, 'trades_sum':t_trades}
 
 	# dumpfile.write('%s, %06d, ' % (expid, time))
 	dumpfile.write('%s, ' % (expid))
 	for ttype in sorted(list(trader_types.keys())):
 		n = trader_types[ttype]['n']
 		s = trader_types[ttype]['balance_sum']
-		dumpfile.write('%s, %d, %d, %f, ' % (ttype, s, n, s / float(n)))
+		t = trader_types[ttype]['trades_sum']
+		dumpfile.write('%s, %d, %d, %f, %f, ' % (ttype, s, n, s / float(n), t / float(n)))
 
 	# if lob['bids']['best'] != None :
 	# 	dumpfile.write('%d, ' % (lob['bids']['best']))
@@ -316,7 +319,7 @@ if __name__ == "__main__":
 	# 	values = ratios[49*server:]
 
 	n_trials_per_ratio = 100
-	n_schedules_per_ratio = 10
+	n_schedules_per_ratio = 5
 	trialnumber = 1
 	# intervals = [30, 60, 150, 300]
 	# for interval in intervals:
@@ -341,7 +344,7 @@ if __name__ == "__main__":
 								]
 
 			order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-							'interval':30, 'timemode':'periodic'}
+							'interval':100, 'timemode':'periodic'}
 		
 			buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
 							('GDX', trdr_3_n), ('AA', trdr_4_n)]
