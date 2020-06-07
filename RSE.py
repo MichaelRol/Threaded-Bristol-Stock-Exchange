@@ -344,7 +344,7 @@ if __name__ == "__main__":
 								]
 
 			order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-							'interval':100, 'timemode':'periodic'}
+							'interval':30, 'timemode':'periodic'}
 		
 			buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
 							('GDX', trdr_3_n), ('AA', trdr_4_n)]
