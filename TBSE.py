@@ -5,9 +5,9 @@ import time
 import queue
 import random
 import csv	
-from RSE_exchange import Exchange
-from RSE_customer_orders import customer_orders
-from RSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP, Trader_AA, Trader_GDX
+from TBSE_exchange import Exchange
+from TBSE_customer_orders import customer_orders
+from TBSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP, Trader_AA, Trader_GDX
 
 
 # trade_stats()

@@ -1,5 +1,5 @@
 import sys
-from RSE_sys_consts import rse_sys_minprice, rse_sys_maxprice
+from TBSE_sys_consts import tbse_sys_minprice, tbse_sys_maxprice
 
 # Orderbook_half is one side of the book: a list of bids or a list of asks, each sorted best-first
 
@@ -138,8 +138,8 @@ class Orderbook_half:
 class Orderbook(Orderbook_half):
 
 	def __init__(self):
-		self.bids = Orderbook_half('Bid', rse_sys_minprice)
-		self.asks = Orderbook_half('Ask', rse_sys_maxprice)
+		self.bids = Orderbook_half('Bid', tbse_sys_minprice)
+		self.asks = Orderbook_half('Ask', tbse_sys_maxprice)
 		self.tape = []
 		self.quote_id = 0  #unique ID code for each quote accepted onto the book
 
