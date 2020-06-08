@@ -12,7 +12,7 @@ with open('fullinput.csv', newline = '') as csvfile:
 				name[x] = row[x].zfill(2)
 			else:
 				name[x] = row[x]
-		with open('Results/'+name[0]+'-'+name[1]+'-'+name[2]+'-'+name[3]+'.csv') as testfile:
+		with open('Results/Simple/Slow/'+name[0]+'-'+name[1]+'-'+name[2]+'-'+name[3]+'.csv') as testfile:
 			newreader = csv.reader(testfile, delimiter=',')
 			total = [0, 0, 0, 0]
 			winner = [0, 0, 0, 0]
