@@ -1,22 +1,22 @@
 import sys
 import random
-from RSE_msg_classes import Order
-from RSE_sys_consts import rse_sys_maxprice, rse_sys_minprice
+from TBSE_msg_classes import Order
+from TBSE_sys_consts import tbse_sys_maxprice, tbse_sys_minprice
 
 def customer_orders(time, coid, last_update, traders, trader_stats, os, pending, verbose):
 
 
         def sysmin_check(price):
-            if price < rse_sys_minprice:
+            if price < tbse_sys_minprice:
                 print('WARNING: price < bse_sys_min -- clipped')
-                price = rse_sys_minprice
+                price = tbse_sys_minprice
             return price
 
 
         def sysmax_check(price):
-            if price > rse_sys_maxprice:
+            if price > tbse_sys_maxprice:
                 print('WARNING: price > bse_sys_max -- clipped')
-                price = rse_sys_maxprice
+                price = tbse_sys_maxprice
             return price
 
         

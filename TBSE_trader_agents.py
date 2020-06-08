@@ -2,8 +2,8 @@ import sys
 import math
 import random
 import threading
-from RSE_sys_consts import rse_sys_maxprice
-from RSE_msg_classes import Order
+from TBSE_sys_consts import tbse_sys_maxprice
+from TBSE_msg_classes import Order
 # Trader superclass
 # all Traders have a trader id, bank balance, blotter, and list of orders to execute
 class Trader:
@@ -463,7 +463,7 @@ class Trader_AA(Trader):
         self.theta = -2.0
         self.theta_max = 2.0
         self.theta_min = -8.0
-        self.marketMax = rse_sys_maxprice
+        self.marketMax = tbse_sys_maxprice
 
         # Variables to describe the market
         self.previous_transactions = []
