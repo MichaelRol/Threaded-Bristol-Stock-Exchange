@@ -1832,7 +1832,7 @@ if __name__ == "__main__":
     # if server == 19:
     #     values = ratios[49*server:]
 
-    n_trials_per_ratio = 20
+    n_trials_per_ratio = 100
     n_schedules_per_ratio = 5
     trialnumber = 1
 
@@ -1869,12 +1869,12 @@ if __name__ == "__main__":
             while trial <= n_trials_per_ratio:
                 gc.collect()
                 
-                start = timee()
+                # start = timee()
                 trial_id = 'trial%07d' % trialnumber
                 
                 market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
-                end = timee()
-                print(end-start)
+                # end = timee()
+                # print(end-start)
                 tdump.flush()
                 trial = trial + 1
                 trialnumber = trialnumber + 1
