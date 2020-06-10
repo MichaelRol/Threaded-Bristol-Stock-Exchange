@@ -21,6 +21,7 @@ class Trader:
         self.profitpertime = 0  # profit per unit time
         self.n_trades = 0       # how many trades has this trader done?
         self.lastquote = None   # record of what its last quote was
+        self.times = [0, 0, 0, 0] # values used to calculate timing elements
 
 
     def __str__(self):
@@ -248,6 +249,7 @@ class Trader_ZIP(Trader):
         self.margin_sell = m_fix + m_var * random.random()
         self.price = None
         self.limit = None
+        self.times = [0, 0, 0, 0]
         # memory of best price & quantity of best bid and ask, on LOB on previous update
         self.prev_best_bid_p = None
         self.prev_best_bid_q = None
@@ -448,6 +450,7 @@ class Trader_AA(Trader):
         self.orders = {}
         self.n_quotes = 0
         self.lastquote = None
+        self.times = [0, 0, 0, 0]
 
         self.limit = None
         self.job = None
@@ -771,6 +774,7 @@ class Trader_GDX(Trader):
         self.lastquote = None
         self.job = None  # this gets switched to 'Bid' or 'Ask' depending on order-type
         self.active = False  # gets switched to True while actively working an order
+        self.times = [0, 0, 0, 0]
 
         #memory of all bids and asks and accepted bids and asks
         self.outstanding_bids = []

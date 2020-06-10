@@ -23,12 +23,18 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 		if ttype in trader_types.keys():
 			t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
 			t_trades = trader_types[ttype]['trades_sum'] + traders[t].n_trades
+			t_time1 = trader_types[ttype]['time1'] + traders[t].times[0] / traders[t].times[3]
+			t_time2 = trader_types[ttype]['time2'] + traders[t].times[1] / traders[t].times[3]
+			t_time3 = trader_types[ttype]['time3'] + traders[t].times[2] / traders[t].times[3]
 			n = trader_types[ttype]['n'] + 1
 		else:
 			t_balance = traders[t].balance
+			t_time1 = traders[t].times[0] / traders[t].times[3]
+			t_time2 = traders[t].times[1] / traders[t].times[3]
+			t_time3 = traders[t].times[2] / traders[t].times[3]
 			n = 1 
 			t_trades = traders[t].n_trades
-		trader_types[ttype] = {'n':n, 'balance_sum':t_balance, 'trades_sum':t_trades}
+		trader_types[ttype] = {'n':n, 'balance_sum':t_balance, 'trades_sum':t_trades, 'time1':t_time1, 'time2':t_time2, 'time3':t_time3}
 
 	# dumpfile.write('%s, %06d, ' % (expid, time))
 	dumpfile.write('%s, ' % (expid))
@@ -36,7 +42,10 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 		n = trader_types[ttype]['n']
 		s = trader_types[ttype]['balance_sum']
 		t = trader_types[ttype]['trades_sum']
-		dumpfile.write('%s, %d, %d, %f, %f, ' % (ttype, s, n, s / float(n), t / float(n)))
+		time1 = trader_types[ttype]['time1']
+		time2 = trader_types[ttype]['time2']
+		time3 = trader_types[ttype]['time3']
+		dumpfile.write('%s, %d, %d, %f, %f, %f, %f, %f, ' % (ttype, s, n, s / float(n), t / float(n),  time1 / float(n), time2 / float(n), time3 / float(n)))
 
 	# if lob['bids']['best'] != None :
 	# 	dumpfile.write('%d, ' % (lob['bids']['best']))
@@ -177,6 +186,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 		time_left =  (virtual_end - virtual_time) / virtual_end
 		trade = None
 		order = None
+		time1 = time.time()
 		while trader_q.empty() is False:
 			[trade, order, lob] = trader_q.get(block = False)
 			if trade['party1'] == trader.tid: trader.bookkeep(trade, order, bookkeep_verbose, virtual_time)
@@ -185,13 +195,19 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 
 		lob = exchange.publish_lob(virtual_time, False)
 		trader.respond(virtual_time, lob, trade, respond_verbose)
+		time2 = time.time()
 		order = trader.getorder(virtual_time, time_left, lob)
+		time3 = time.time()
 		if order is not None:
 			# print(order)
 			if order.otype == 'Ask' and order.price < trader.orders[order.coid].price: sys.exit('Bad ask')
 			if order.otype == 'Bid' and order.price > trader.orders[order.coid].price: sys.exit('Bad bid')
 			trader.n_quotes = 1
 			order_q.put(order)
+			trader.times[0] += time3 - time1
+			trader.times[1] += time3 - time2
+			trader.times[2] += time2 - time1
+			trader.times[3] += 1
            
 	return 0
 
@@ -318,7 +334,7 @@ if __name__ == "__main__":
 	# if server == 19:
 	# 	values = ratios[49*server:]
 
-	n_trials_per_ratio = 100
+	n_trials_per_ratio = 20
 	n_schedules_per_ratio = 5
 	trialnumber = 1
 	# intervals = [30, 60, 150, 300]

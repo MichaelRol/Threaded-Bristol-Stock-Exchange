@@ -49,7 +49,7 @@ import sys
 import math
 import random
 import csv
-from time import time
+from time import time as timee
 import gc
 
 
@@ -391,6 +391,7 @@ class Trader:
                 self.profitpertime = 0  # profit per unit time
                 self.n_trades = 0       # how many trades has this trader done?
                 self.lastquote = None   # record of what its last quote was
+                self.times = [0, 0, 0]
 
 
         def __str__(self):
@@ -599,6 +600,7 @@ class Trader_ZIP(Trader):
                 self.margin_sell = 0.05 + 0.3 * random.random()
                 self.price = None
                 self.limit = None
+                self.times = [0, 0, 0]
                 # memory of best price & quantity of best bid and ask, on LOB on previous update
                 self.prev_best_bid_p = None
                 self.prev_best_bid_q = None
@@ -804,6 +806,7 @@ class Trader_GDX(Trader):
                 self.lastquote = None
                 self.job = None  # this gets switched to 'Bid' or 'Ask' depending on order-type
                 self.active = False  # gets switched to True while actively working an order
+                self.times = [0, 0, 0]
 
                 #memory of all bids and asks and accepted bids and asks
                 self.outstanding_bids = []
@@ -1040,6 +1043,7 @@ class Trader_AA(Trader):
                 self.orders = []
                 self.n_quotes = 0
                 self.lastquote = None
+                self.times = [0, 0, 0]
 
                 self.limit = None
                 self.job = None
@@ -1367,36 +1371,50 @@ class Trader_AA(Trader):
 # between successive calls, but that does make it inefficient as it has to
 # re-analyse the entire set of traders on each call
 def trade_stats(expid, traders, dumpfile, time, lob):
-        trader_types = {}
-        n_traders = len(traders)
-        for t in traders:
-                ttype = traders[t].ttype
-                if ttype in trader_types.keys():
-                        t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
-                        n = trader_types[ttype]['n'] + 1
-                else:
-                        t_balance = traders[t].balance
-                        n = 1
-                trader_types[ttype] = {'n':n, 'balance_sum':t_balance}
-
-
-        dumpfile.write('%s, %06d, ' % (expid, time))
-        for ttype in sorted(list(trader_types.keys())):
-                n = trader_types[ttype]['n']
-                s = trader_types[ttype]['balance_sum']
-                dumpfile.write('%s, %d, %d, %f, ' % (ttype, s, n, s / float(n)))
-
-        if lob['bids']['best'] != None :
-                dumpfile.write('%d, ' % (lob['bids']['best']))
+    trader_types = {}
+    for t in traders:
+        ttype = traders[t].ttype
+        if ttype in trader_types.keys():
+            t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
+            t_trades = trader_types[ttype]['trades_sum'] + traders[t].n_trades
+            if traders[t].times[2] != 0:
+                t_time1 = trader_types[ttype]['time1'] + traders[t].times[0] / traders[t].times[2]
+                t_time2 = trader_types[ttype]['time2'] + traders[t].times[1] / traders[t].times[2]
+            else:
+                t_time1 = trader_types[ttype]['time1']
+                t_time2 = trader_types[ttype]['time2'] 
+            n = trader_types[ttype]['n'] + 1
         else:
-                dumpfile.write('N, ')
-        if lob['asks']['best'] != None :
-                dumpfile.write('%d, ' % (lob['asks']['best']))
-        else:
-                dumpfile.write('N, ')
-        dumpfile.write('\n');
+            t_balance = traders[t].balance
+            if traders[t].times[2] != 0:
+                t_time1 = traders[t].times[0] / traders[t].times[2]
+                t_time2 = traders[t].times[1] / traders[t].times[2]
+            else:
+                t_time1 = 0
+                t_time2 = 0
+            n = 1 
+            t_trades = traders[t].n_trades
+        trader_types[ttype] = {'n':n, 'balance_sum':t_balance, 'trades_sum':t_trades, 'time1':t_time1, 'time2':t_time2}
 
+    # dumpfile.write('%s, %06d, ' % (expid, time))
+    dumpfile.write('%s, ' % (expid))
+    for ttype in sorted(list(trader_types.keys())):
+        n = trader_types[ttype]['n']
+        s = trader_types[ttype]['balance_sum']
+        t = trader_types[ttype]['trades_sum']
+        time1 = trader_types[ttype]['time1']
+        time2 = trader_types[ttype]['time2']
+        dumpfile.write('%s, %d, %d, %f, %f, %f, %f, ' % (ttype, s, n, s / float(n), t / float(n),  time1 / float(n), time2 / float(n)))
 
+    # if lob['bids']['best'] != None :
+    # 	dumpfile.write('%d, ' % (lob['bids']['best']))
+    # else:
+    # 	dumpfile.write('N, ')
+    # if lob['asks']['best'] != None :
+    # 	dumpfile.write('%d, ' % (lob['asks']['best']))
+    # else:
+    # 	dumpfile.write('N, ')
+    dumpfile.write('\n')
 
 
 
@@ -1569,7 +1587,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
         def getissuetimes(n_traders, mode, interval, shuffle, fittointerval):
                 interval = float(interval)
                 if n_traders < 1:
-                        sys.exit('FAIL: n_traders < 1 in getissuetime()')
+                        sys.exit('FAIL: n_traders < 1 in getissuetimee()')
                 elif n_traders == 1:
                         tstep = interval
                 else:
@@ -1733,11 +1751,15 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 
                 # get a limit-order quote (or None) from a randomly chosen trader
                 tid = list(traders.keys())[random.randint(0, len(traders) - 1)]
+                time1 = timee()
                 order = traders[tid].getorder(time, time_left, exchange.publish_lob(time, lob_verbose))
-
+                time2 = timee()
+                
                 # if verbose: print('Trader Quote: %s' % (order))
 
                 if order != None:
+                        traders[tid].times[0] += time2 - time1
+                        traders[tid].times[2] += 1
                         if order.otype == 'Ask' and order.price < traders[tid].orders[0].price: sys.exit('Bad ask')
                         if order.otype == 'Bid' and order.price > traders[tid].orders[0].price: sys.exit('Bad bid')
                         # send order to exchange
@@ -1756,7 +1778,10 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
                                 # NB respond just updates trader's internal variables
                                 # doesn't alter the LOB, so processing each trader in
                                 # sequence (rather than random/shuffle) isn't a problem
+                                time3 = timee()
                                 traders[t].respond(time, lob, trade, respond_verbose)
+                                time4 = timee()
+                                traders[t].times[1] += time4 - time3
 
                 time = time + timestep
 
@@ -1807,7 +1832,7 @@ if __name__ == "__main__":
     # if server == 19:
     #     values = ratios[49*server:]
 
-    n_trials_per_ratio = 100
+    n_trials_per_ratio = 20
     n_schedules_per_ratio = 5
     trialnumber = 1
 
@@ -1844,11 +1869,11 @@ if __name__ == "__main__":
             while trial <= n_trials_per_ratio:
                 gc.collect()
                 
-                start = time()
+                start = timee()
                 trial_id = 'trial%07d' % trialnumber
                 
                 market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
-                end = time()
+                end = timee()
                 print(end-start)
                 tdump.flush()
                 trial = trial + 1
