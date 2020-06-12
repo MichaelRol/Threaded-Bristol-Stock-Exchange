@@ -193,7 +193,7 @@ def run_trader(trader, exchange, order_q, trader_q, start_event, start_time, ses
 			trader.times[1] += time3 - time2
 			trader.times[2] += time2 - time1
 			trader.times[3] += 1
-           
+		   
 	return 0
 
 # one session in the market
@@ -340,8 +340,8 @@ if __name__ == "__main__":
 			supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
 								]
 
-            range_max = random.randint(100,200)
-            range_min = random.randint(1, 100)
+			range_max = random.randint(100,200)
+			range_min = random.randint(1, 100)
 			rangeD = (range_min, range_max, schedule_offsetfn)
 			demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
 								]
