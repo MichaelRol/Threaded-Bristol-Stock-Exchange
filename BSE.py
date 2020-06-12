@@ -1852,6 +1852,8 @@ if __name__ == "__main__":
             supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
                                 ]
 
+            range_max = random.randint(100,200)
+            range_min = random.randint(1, 100)
             rangeD = (range_min, range_max, schedule_offsetfn)
             demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
                                 ]

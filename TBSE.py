@@ -58,21 +58,6 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 	dumpfile.write('\n')
 
 
-def calc_est_eq(rangeS, rangeD):
-	
-	x1 = 1
-	y1 = rangeD[1]
-	x2 = 20
-	y2 =  rangeD[0]
-	x3 = 1
-	y3 = rangeS[0]  
-	x4 = 20
-	y4 = rangeS[1]
-
-	x = ((x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4))
-	y = ((x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4))/((x1-x2)*(y3-y4)-(y1-y2)*(x3-x4))
-	
-	return(x, y)
 
 # create a bunch of traders from traders_spec
 # returns tuple (n_buyers, n_sellers)
@@ -355,6 +340,8 @@ if __name__ == "__main__":
 			supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
 								]
 
+            range_max = random.randint(100,200)
+            range_min = random.randint(1, 100)
 			rangeD = (range_min, range_max, schedule_offsetfn)
 			demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
 								]
