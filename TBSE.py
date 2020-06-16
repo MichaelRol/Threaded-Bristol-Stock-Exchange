@@ -320,7 +320,7 @@ if __name__ == "__main__":
 	# 	values = ratios[49*server:]
 
 	n_trials_per_ratio = 100
-	n_schedules_per_ratio = 5
+	n_schedules_per_ratio = 10
 	trialnumber = 1
 	# intervals = [30, 60, 150, 300]
 	# for interval in intervals:
