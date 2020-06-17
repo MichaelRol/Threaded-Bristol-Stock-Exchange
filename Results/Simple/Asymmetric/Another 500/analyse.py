@@ -123,7 +123,7 @@ with open('fullinput.csv', newline = '') as csvfile:
 				second = 3
 		
 			for row in newreader:
-				# print(row)
+				# print(name[0]+'-'+name[1]+'-'+name[2]+'-'+name[3])
 				if len(row) == 16:
 					total[first] += float(row[4])
 					total[second] += float(row[11])

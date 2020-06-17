@@ -2,7 +2,7 @@ import csv
 
 ratios = []
 
-with open('fullinput.csv', newline = '') as csvfile:
+with open('halfinput.csv', newline = '') as csvfile:
 	rse_output = open('rse-output.csv', 'w')
 	reader = csv.reader(csvfile, delimiter=',')
 	for row in reader:
@@ -83,7 +83,7 @@ with open('fullinput.csv', newline = '') as csvfile:
 		testfile.close()
 csvfile.close()
 
-with open('fullinput.csv', newline = '') as csvfile:
+with open('halfinput.csv', newline = '') as csvfile:
 	bse_output = open('bse-output.csv', 'w')
 	reader = csv.reader(csvfile, delimiter=',')
 	for row in reader:
@@ -123,7 +123,7 @@ with open('fullinput.csv', newline = '') as csvfile:
 				second = 3
 		
 			for row in newreader:
-				# print(row)
+				# print(name[0]+'-'+name[1]+'-'+name[2]+'-'+name[3])
 				if len(row) == 16:
 					total[first] += float(row[4])
 					total[second] += float(row[11])

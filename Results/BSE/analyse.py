@@ -124,10 +124,10 @@ with open('fullinput.csv', newline = '') as csvfile:
 		
 			for row in newreader:
 				# print(row)
-				if len(row) == 13:
-					total[first] += float(row[5])
-					total[second] += float(row[9])
-					if float(row[5]) > float(row[9]):
+				if len(row) == 16:
+					total[first] += float(row[4])
+					total[second] += float(row[11])
+					if float(row[4]) > float(row[11]):
 						winner[first] += 1 
 					else:
 						winner[second] += 1						
