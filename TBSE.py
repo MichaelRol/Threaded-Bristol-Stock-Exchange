@@ -329,8 +329,10 @@ if __name__ == "__main__":
 		trdr_2_n = int(ratio[1])
 		trdr_3_n = int(ratio[2])
 		trdr_4_n = int(ratio[3])
+		trdr_5_n = int(ratio[4])
+		trdr_6_n = int(ratio[5])
 
-		fname = 'Results/%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n)
+		fname = 'Results/%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
 
 		tdump = open(fname, 'w')
 		for _ in range(0, n_schedules_per_ratio):
@@ -340,8 +342,8 @@ if __name__ == "__main__":
 			supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
 								]
 
-			range_max = random.randint(100,200)
-			range_min = random.randint(1, 100)
+			# range_max = random.randint(100,200)
+			# range_min = random.randint(1, 100)
 			rangeD = (range_min, range_max, schedule_offsetfn)
 			demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
 								]
@@ -350,7 +352,8 @@ if __name__ == "__main__":
 							'interval':30, 'timemode':'periodic'}
 		
 			buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
-							('GDX', trdr_3_n), ('AA', trdr_4_n)]
+							('GDX', trdr_3_n), ('AA', trdr_4_n),
+							('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
 
 			sellers_spec = buyers_spec
 			traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
@@ -363,7 +366,7 @@ if __name__ == "__main__":
 					num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
 									order_sched, tdump, False, start_event, False)
 					
-					if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n) * 2 + 2:
+					if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n + trdr_5_n + trdr_6_n) * 2 + 2:
 						trial = trial - 1
 						trialnumber = trialnumber - 1
 						start_event.clear()
