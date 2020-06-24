@@ -125,7 +125,7 @@ class Trader_Giveaway(Trader):
                     self.orders[coid].qty,
                     time, self.orders[coid].coid, self.orders[coid].toid)
             self.lastquote=order
-            return order
+        return order
 
 
 
