@@ -1848,7 +1848,7 @@ if __name__ == "__main__":
         for _ in range(0, n_schedules_per_ratio):
             range_max = random.randint(100,200)
             range_min = random.randint(1, 100)
-            rangeS = (range_min, range_max, schedule_offsetfn)
+            rangeS = (range_min, range_max)
             supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
                                 ]
 

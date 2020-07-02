@@ -29,6 +29,7 @@ def customer_orders(time, coid, last_update, traders, trader_stats, os, pending,
                     # same offset for min and max
                     offset_min = offsetfn(issuetime)
                     offset_max = offset_min
+                    print(offset_min)
                 else:
                     sys.exit('FAIL: 3rd argument of sched in getorderprice() not callable')
                 if len(sched[0]) > 3:
