@@ -1831,7 +1831,7 @@ if __name__ == "__main__":
     #     values = ratios[49*server:]
 
     n_trials_per_ratio = 100
-    n_schedules_per_ratio = 5
+    n_schedules_per_ratio = 10
     trialnumber = 1
 
     for ratio in ratios:
@@ -1854,7 +1854,7 @@ if __name__ == "__main__":
 
             # range_max = random.randint(100,200)
             # range_min = random.randint(1, 100)
-            rangeD = (range_min, range_max, schedule_offsetfn)
+            rangeD = (range_min, range_max)
             demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
                                 ]
 

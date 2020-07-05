@@ -65,10 +65,10 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 def populate_market(traders_spec, traders, shuffle, verbose):
 
 	def trader_type(robottype, name):
-		if robottype == 'GVWY':
-			return Trader_Giveaway('GVWY', name, 0.00, 0)
-		elif robottype == 'ZIC':
-			return Trader_ZIC('ZIC', name, 0.00, 0)
+		if robottype == 'A':
+			return Trader_ZIP('A', name, 0.00, 0)
+		elif robottype == 'B':
+			return Trader_ZIP('B', name, 0.00, 0)
 		elif robottype == 'SHVR':
 			return Trader_Shaver('SHVR', name, 0.00, 0)
 		elif robottype == 'SNPR':
@@ -306,12 +306,12 @@ if __name__ == "__main__":
 		return int(round(offset, 0))
 	
 	
-	server = int(sys.argv[1])
-	ratios = []
-	with open(str(server)+'.csv', newline = '') as csvfile:
-		reader = csv.reader(csvfile, delimiter=',')
-		for row in reader:
-			ratios.append(row)
+	# server = int(sys.argv[1])
+	# ratios = []
+	# with open(str(server)+'.csv', newline = '') as csvfile:
+	# 	reader = csv.reader(csvfile, delimiter=',')
+	# 	for row in reader:
+	# 		ratios.append(row)
 
 
 	# values = ratios[49*server:49*server+49]
@@ -322,18 +322,12 @@ if __name__ == "__main__":
 	n_trials_per_ratio = 100
 	n_schedules_per_ratio = 10
 	trialnumber = 1
-	
-	for ratio in ratios:
-		trdr_1_n = int(ratio[0])
-		trdr_2_n = int(ratio[1])
-		trdr_3_n = int(ratio[2])
-		trdr_4_n = int(ratio[3])
-		trdr_5_n = int(ratio[4])
-		trdr_6_n = int(ratio[5])
 
-		fname = 'Results/%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
+	for i in range(1, 20):
 
+		fname = 'Results/TEAR-%02d-%02d.csv' % (i, 20-i)
 		tdump = open(fname, 'w')
+
 		for _ in range(0, n_schedules_per_ratio):
 			range_max = random.randint(100,200)
 			range_min = random.randint(1, 100)
@@ -349,10 +343,8 @@ if __name__ == "__main__":
 
 			order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
 							'interval':30, 'timemode':'periodic'}
-		
-			buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
-							('GDX', trdr_3_n), ('AA', trdr_4_n),
-							('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
+
+			buyers_spec = [('A', i), ('B', 20-i)]
 
 			sellers_spec = buyers_spec
 			traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
@@ -365,7 +357,7 @@ if __name__ == "__main__":
 					num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
 									order_sched, tdump, False, start_event, False)
 					
-					if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n + trdr_5_n + trdr_6_n) * 2 + 2:
+					if num_threads != 42:
 						trial = trial - 1
 						trialnumber = trialnumber - 1
 						start_event.clear()
@@ -383,7 +375,7 @@ if __name__ == "__main__":
 
 	# run a sequence of trials, one session per trial
 
-	# n_trials = 50
+	# n_trials = 1000
 	# tdump=open('avg_balance.csv','w')
 	# trial = 1
 	# if n_trials > 1:
