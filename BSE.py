@@ -822,10 +822,10 @@ class Trader_GDX(Trader):
 
                 self.first_turn = True
 
-                self.gamma = 0.1
+                self.gamma = 0.9
 
-                self.holdings = 10
-                self.remaining_offer_ops = 10
+                self.holdings = 15
+                self.remaining_offer_ops = 15
                 self.values = [[0 for n in range(self.remaining_offer_ops)] for m in range(self.holdings)]
 
 
