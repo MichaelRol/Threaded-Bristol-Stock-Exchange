@@ -1831,7 +1831,7 @@ if __name__ == "__main__":
     #     values = ratios[49*server:]
 
     n_trials_per_ratio = 100
-    n_schedules_per_ratio = 10
+    n_schedules_per_ratio = 5 
     trialnumber = 1
 
     for ratio in ratios:
