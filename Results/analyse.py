@@ -3,7 +3,7 @@ import csv
 ratios = []
 
 with open('fullinput.csv', newline = '') as csvfile:
-	rse_output = open('bse-output.csv', 'w')
+	rse_output = open('tbse-output.csv', 'w')
 	reader = csv.reader(csvfile, delimiter=',')
 	for row in reader:
 		name = ['00', '00', '00', '00', '00', '00']

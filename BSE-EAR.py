@@ -1423,9 +1423,9 @@ def populate_market(traders_spec, traders, shuffle, verbose):
 
 		def trader_type(robottype, name):
 				if robottype == 'A':
-						return Trader_ZIP('A', name, 0.00, 0)
+						return Trader_Giveaway('A', name, 0.00, 0)
 				elif robottype == 'B':
-						return Trader_ZIP('B', name, 0.00, 0)
+						return Trader_Giveaway('B', name, 0.00, 0)
 				elif robottype == 'SHVR':
 						return Trader_Shaver('SHVR', name, 0.00, 0)
 				elif robottype == 'SNPR':
