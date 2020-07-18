@@ -28,7 +28,7 @@ def assign_prices(limitprices, num_a):
 min = 50
 max = 250
 p0 = 150
-max_traders = 27
+max_traders = 20
 
 traders = []
 ratio = []
