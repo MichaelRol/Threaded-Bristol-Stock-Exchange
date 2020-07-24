@@ -68,7 +68,7 @@ class Order:
                 self.qid = qid      # quote i.d. (unique to each quote)
 
         def __str__(self):
-                return '[%s %s P=%03d Q=%s T=%5.2f QID:%d]' % \
+                return '%s, %s, %03d, %s, %5.2f, %d' % \
                        (self.tid, self.otype, self.price, self.qty, self.time, self.qid)
 
 
@@ -135,7 +135,7 @@ class Orderbook_half:
                         self.best_price = None
                         self.best_tid = None
 
-                if lob_verbose : print self.lob
+                if lob_verbose : print(self.lob)
 
 
         def book_add(self, order):
@@ -432,9 +432,9 @@ class Trader:
                 self.profitpertime = self.balance/(time - self.birthtime)
 
                 if profit < 0 :
-                        print profit
-                        print trade
-                        print order
+                        print(profit)
+                        print(trade)
+                        print(order)
                         sys.exit()
 
                 if verbose: print('%s profit=%d balance=%d profit/time=%d' % (outstr, profit, self.balance, self.profitpertime))
@@ -826,7 +826,7 @@ def trade_stats(expid, traders, dumpfile, time, lob):
                 dumpfile.write('%d, ' % (lob['asks']['best']))
         else:
                 dumpfile.write('N, ')
-        dumpfile.write('\n');
+        dumpfile.write('\n')
 
 
 
@@ -1115,6 +1115,7 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
         # create a bunch of traders
         traders = {}
         trader_stats = populate_market(trader_spec, traders, True, verbose)
+        order_file = open('orders.csv', 'w')
 
 
         # timestep set so that can process all traders in one second
@@ -1162,7 +1163,9 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
                 # get a limit-order quote (or None) from a randomly chosen trader
                 tid = list(traders.keys())[random.randint(0, len(traders) - 1)]
                 order = traders[tid].getorder(time, time_left, exchange.publish_lob(time, lob_verbose))
-
+                if order != None:
+                    order_file.write(str(order))
+                    order_file.write('\n')
                 # if verbose: print('Trader Quote: %s' % (order))
 
                 if order != None:
@@ -1191,6 +1194,7 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 
         # end of an experiment -- dump the tape
         exchange.tape_dump('transactions.csv', 'w', 'keep')
+        order_file.close()
 
 
         # write trade_stats for this experiment NB end-of-session summary only
@@ -1340,49 +1344,82 @@ if __name__ == "__main__":
     # if server == 19:
     #     values = ratios[49*server:]
 
-    n_trials_per_ratio = 100
-    n_schedules_per_ratio = 5
+    # n_trials_per_ratio = 100
+    # n_schedules_per_ratio = 5
     trialnumber = 1
 
+    range_max = random.randint(100,200)
+    range_min = random.randint(1, 100)
+    rangeS = (range_min, range_max, schedule_offsetfn)
+    supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
+                        ]
 
-    for x in range(1, 20):
-        trdr_1_n = x
-        trdr_2_n = 20 - x
-        trdr_3_n = 0
-        trdr_4_n = 0
-        fname = 'Results/BSE/bse-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n)
+    rangeD = (range_min, range_max, schedule_offsetfn)
+    demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
+                        ]
 
-        tdump = open(fname, 'w')
-        for _ in range(0, n_schedules_per_ratio):
-            range_max = random.randint(100,200)
-            range_min = random.randint(1, 100)
-            rangeS = (range_min, range_max, schedule_offsetfn)
-            supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
-                                ]
+    order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+                    'interval':30, 'timemode':'periodic'}
 
-            rangeD = (range_min, range_max, schedule_offsetfn)
-            demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
-                                ]
+    buyers_spec = [('ZIC',5),('ZIP',5)]
+    sellers_spec = buyers_spec
+    traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 
-            order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-                            'interval':30, 'timemode':'periodic'}
-        
-            buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
-                            ('GDX', 0), ('AA', 0)]
+    # run a sequence of trials, one session per trial
 
-            sellers_spec = buyers_spec
-            traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+    n_trials = 1
+    tdump=open('avg_balance.csv','w')
+    trial = 1
+    if n_trials > 1:
+            dump_all = False
+    else:
+            dump_all = True
             
-            trial = 1
-            while trial <= n_trials_per_ratio:
-                
-                trial_id = 'trial%07d' % trialnumber
-                
-                market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
-
-                tdump.flush()
-                trial = trial + 1
-                trialnumber = trialnumber + 1
+    while (trial<(n_trials+1)):
+            trial_id = 'trial%04d' % trial
+            market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
+            tdump.flush()
+            trial = trial + 1
     tdump.close()
+
+    sys.exit('Done Now')
+    # for x in range(1, 20):
+    #     trdr_1_n = x
+    #     trdr_2_n = 20 - x
+    #     trdr_3_n = 0
+    #     trdr_4_n = 0
+    #     fname = '%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n)
+    #     tdump = open(fname, 'w')
+    #     for _ in range(0, n_schedules_per_ratio):
+    #         range_max = random.randint(100,200)
+    #         range_min = random.randint(1, 100)
+    #         rangeS = (range_min, range_max, schedule_offsetfn)
+    #         supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
+    #                             ]
+
+    #         rangeD = (range_min, range_max, schedule_offsetfn)
+    #         demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
+    #                             ]
+
+    #         order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+    #                         'interval':30, 'timemode':'periodic'}
+        
+    #         buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
+    #                         ('GDX', 0), ('AA', 0)]
+
+    #         sellers_spec = buyers_spec
+    #         traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+            
+    #         trial = 1
+    #         while trial <= n_trials_per_ratio:
+                
+    #             trial_id = 'trial%07d' % trialnumber
+                
+    #             market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
+
+    #             tdump.flush()
+    #             trial = trial + 1
+    #             trialnumber = trialnumber + 1
+    # tdump.close()
 
 
