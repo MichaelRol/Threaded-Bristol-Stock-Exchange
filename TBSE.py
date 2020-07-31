@@ -16,6 +16,8 @@ from TBSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Tr
 # the number of traders of any one type -- allows either/both to change
 # between successive calls, but that does make it inefficient as it has to
 # re-analyse the entire set of traders on each call
+
+# Adapted from original BSE code
 def trade_stats(expid, traders, dumpfile, time, lob):
 	trader_types = {}
 	for t in traders:
@@ -62,6 +64,7 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 # create a bunch of traders from traders_spec
 # returns tuple (n_buyers, n_sellers)
 # optionally shuffles the pack of buyers and the pack of sellers
+# From original BSE code
 def populate_market(traders_spec, traders, shuffle, verbose):
 
 	def trader_type(robottype, name):
@@ -274,7 +277,7 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 
 
 	# end of an experiment -- dump the tape
-	exchange.tape_dump('transactions.csv', 'w', 'keep')
+	exchange.tape_dump('tbse-transactions.csv', 'a', 'keep')
 
 
 	# write trade_stats for this experiment NB end-of-session summary only
@@ -305,98 +308,123 @@ if __name__ == "__main__":
 		offset = gradient + amplitude * math.sin(wavelength * t)
 		return int(round(offset, 0))
 	
+	rangeS = (100, 200)
+	supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
+						]
+	rangeD = (100, 200)
+	demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
+						]
+
+	order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+					'interval':60, 'timemode':'periodic'}
+
+	buyers_spec = [('GDX', 10)]
+
+	sellers_spec = buyers_spec
+	traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+
+	n_trials = 50
+	tdump=open('avg_balance.csv','w')
+
+
+	trial = 1
+	if n_trials > 1:
+		dump_all = False
+	else:
+		dump_all = True
+			
+	while (trial<(n_trials+1)):
+		trial_id = 'trial%07d' % trial
+		start_event = threading.Event()
+		try:
+			num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
+							order_sched, tdump, False, start_event, False)
+			
+			if num_threads != 22:
+				trial = trial - 1
+				start_event.clear()
+				time.sleep(0.5)
+		except:
+			trial = trial - 1
+			start_event.clear()
+			time.sleep(0.5)
+		tdump.flush()
+		trial = trial + 1
+	tdump.close()
 	
-	server = int(sys.argv[1])
-	ratios = []
-	with open(str(server)+'.csv', newline = '') as csvfile:
-		reader = csv.reader(csvfile, delimiter=',')
-		for row in reader:
-			ratios.append(row)
+	# server = int(sys.argv[1])
+	# ratios = []
+	# with open(str(server)+'.csv', newline = '') as csvfile:
+	# 	reader = csv.reader(csvfile, delimiter=',')
+	# 	for row in reader:
+	# 		ratios.append(row)
 
 
-	# values = ratios[49*server:49*server+49]
+	# # values = ratios[49*server:49*server+49]
 
-	# if server == 19:
-	# 	values = ratios[49*server:]
+	# # if server == 19:
+	# # 	values = ratios[49*server:]
 
-	n_trials_per_ratio = 100
-	n_schedules_per_ratio = 10
-	trialnumber = 1
+	# n_trials_per_ratio = 100
+	# n_schedules_per_ratio = 10
+	# trialnumber = 1
 	
-	for ratio in ratios:
-		trdr_1_n = int(ratio[0])
-		trdr_2_n = int(ratio[1])
-		trdr_3_n = int(ratio[2])
-		trdr_4_n = int(ratio[3])
-		trdr_5_n = int(ratio[4])
-		trdr_6_n = int(ratio[5])
+	# for ratio in ratios:
+	# 	trdr_1_n = int(ratio[0])
+	# 	trdr_2_n = int(ratio[1])
+	# 	trdr_3_n = int(ratio[2])
+	# 	trdr_4_n = int(ratio[3])
+	# 	trdr_5_n = int(ratio[4])
+	# 	trdr_6_n = int(ratio[5])
 
-		fname = 'Results/%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
+	# 	fname = 'Results/%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
 
-		tdump = open(fname, 'w')
-		for _ in range(0, n_schedules_per_ratio):
-			range_max = random.randint(100,200)
-			range_min = random.randint(1, 100)
-			rangeS = (range_min, range_max)
-			supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
-								]
+	# 	tdump = open(fname, 'w')
+	# 	for _ in range(0, n_schedules_per_ratio):
+	# 		range_max = random.randint(100,200)
+	# 		range_min = random.randint(1, 100)
+	# 		rangeS = (range_min, range_max)
+	# 		supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
+	# 							]
 
-			# range_max = random.randint(100,200)
-			# range_min = random.randint(1, 100)
-			rangeD = (range_min, range_max)
-			demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
-								]
+	# 		# range_max = random.randint(100,200)
+	# 		# range_min = random.randint(1, 100)
+	# 		rangeD = (range_min, range_max)
+	# 		demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
+	# 							]
 
-			order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-							'interval':30, 'timemode':'periodic'}
+	# 		order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+	# 						'interval':30, 'timemode':'periodic'}
 		
-			buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
-							('GDX', trdr_3_n), ('AA', trdr_4_n),
-							('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
+	# 		buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
+	# 						('GDX', trdr_3_n), ('AA', trdr_4_n),
+	# 						('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
 
-			sellers_spec = buyers_spec
-			traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+	# 		sellers_spec = buyers_spec
+	# 		traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 			
-			trial = 1
-			while trial <= n_trials_per_ratio:
-				trial_id = 'trial%07d' % trialnumber
-				start_event = threading.Event()
-				try:
-					num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
-									order_sched, tdump, False, start_event, False)
+	# 		trial = 1
+	# 		while trial <= n_trials_per_ratio:
+	# 			trial_id = 'trial%07d' % trialnumber
+	# 			start_event = threading.Event()
+	# 			try:
+	# 				num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
+	# 								order_sched, tdump, False, start_event, False)
 					
-					if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n + trdr_5_n + trdr_6_n) * 2 + 2:
-						trial = trial - 1
-						trialnumber = trialnumber - 1
-						start_event.clear()
-						time.sleep(0.5)
-				except:
-					trial = trial - 1
-					trialnumber = trialnumber - 1
-					start_event.clear()
-					time.sleep(0.5)
-				tdump.flush()
-				trial = trial + 1
-				trialnumber = trialnumber + 1
-		tdump.close()
+	# 				if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n + trdr_5_n + trdr_6_n) * 2 + 2:
+	# 					trial = trial - 1
+	# 					trialnumber = trialnumber - 1
+	# 					start_event.clear()
+	# 					time.sleep(0.5)
+	# 			except:
+	# 				trial = trial - 1
+	# 				trialnumber = trialnumber - 1
+	# 				start_event.clear()
+	# 				time.sleep(0.5)
+	# 			tdump.flush()
+	# 			trial = trial + 1
+	# 			trialnumber = trialnumber + 1
+	# 	tdump.close()
 
 
-	# run a sequence of trials, one session per trial
-
-	# n_trials = 50
-	# tdump=open('avg_balance.csv','w')
-	# trial = 1
-	# if n_trials > 1:
-	# 	dump_all = False
-	# else:
-	# 	dump_all = True
-			
-	# while (trial<(n_trials+1)):
-	# 	trial_id = 'trial%04d' % trial
-	# 	market_session(trial_id, sess_length, virtual_end, traders_spec,
-	# 									order_sched, tdump, False, False)
-	# 	tdump.flush()
-	# 	trial = trial + 1
-	# tdump.close()
-
-	# sys.exit('Done Now')
+	sys.exit('Done Now')

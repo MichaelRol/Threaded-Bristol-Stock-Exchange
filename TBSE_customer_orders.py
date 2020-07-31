@@ -3,6 +3,8 @@ import random
 from TBSE_msg_classes import Order
 from TBSE_sys_consts import tbse_sys_maxprice, tbse_sys_minprice
 
+
+# Mostly unaltered from original BSE code by Dave Cliff
 def customer_orders(time, coid, last_update, traders, trader_stats, os, pending, verbose):
 
 

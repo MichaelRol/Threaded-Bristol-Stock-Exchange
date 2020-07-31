@@ -1,8 +1,10 @@
 import sys
 from TBSE_sys_consts import tbse_sys_minprice, tbse_sys_maxprice
 
-# Orderbook_half is one side of the book: a list of bids or a list of asks, each sorted best-first
 
+# Minor adaptations from original BSE code by Dave Cliff
+
+# Orderbook_half is one side of the book: a list of bids or a list of asks, each sorted best-first
 class Orderbook_half:
 
 	def __init__(self, booktype, worstprice):

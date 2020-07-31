@@ -4,7 +4,7 @@ import random
 import threading
 from TBSE_sys_consts import tbse_sys_maxprice
 from TBSE_msg_classes import Order
-# Trader superclass
+# Trader superclass - mostly unhanced from orginal BSE code by Dave Cliff
 # all Traders have a trader id, bank balance, blotter, and list of orders to execute
 class Trader:
 
@@ -435,7 +435,7 @@ class Trader_ZIP(Trader):
         self.prev_best_ask_p = lob_best_ask_p
         self.prev_best_ask_q = lob_best_ask_q
 
-# Trader subclass AA
+# Daniel Snashall's AA trader
 class Trader_AA(Trader):
 
     def __init__(self, ttype, tid, balance, time):
@@ -758,6 +758,7 @@ class Trader_AA(Trader):
             self.calcTarget()
             #print 'sell: ', self.sell_target, 'buy: ', self.buy_target, 'limit:', self.limit, 'eq: ',  self.estimated_equilibrium[-1], 'sell_r: ', self.sell_r, 'buy_r: ', self.buy_r, '\n'
 
+# Daniel Snashall's GDX implementation
 class Trader_GDX(Trader):
 
     def __init__(self, ttype, tid, balance, time):
@@ -820,8 +821,6 @@ class Trader_GDX(Trader):
 
         if self.first_turn or self.price == -1:
             return None
-        # if order is not None:
-        #     print(order)
         return order
 
     def calc_p_bid(self, m, n):

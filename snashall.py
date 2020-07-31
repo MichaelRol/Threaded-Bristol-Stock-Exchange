@@ -2,9 +2,8 @@
 #
 # BSE: The Bristol Stock Exchange
 #
-# This version: Updates to Python3 by Michael Rollins; June 18th 2020
 # Version 1.3; July 21st, 2018.
-# Version 1.2; November 17th, 2012. 
+# Version 1.2; November 17th, 2012.
 #
 # Copyright (c) 2012-2018, Dave Cliff
 #
@@ -49,8 +48,7 @@
 import sys
 import math
 import random
-import csv
-from time import time as timee
+
 
 bse_sys_minprice = 1  # minimum price in the system, in cents/pennies
 bse_sys_maxprice = 1000  # maximum price in the system, in cents/pennies
@@ -137,7 +135,7 @@ class Orderbook_half:
                         self.best_price = None
                         self.best_tid = None
 
-                if lob_verbose : print(self.lob)
+                if lob_verbose : print self.lob
 
 
         def book_add(self, order):
@@ -390,7 +388,6 @@ class Trader:
                 self.profitpertime = 0  # profit per unit time
                 self.n_trades = 0       # how many trades has this trader done?
                 self.lastquote = None   # record of what its last quote was
-                self.times = [0, 0, 0]
 
 
         def __str__(self):
@@ -435,9 +432,9 @@ class Trader:
                 self.profitpertime = self.balance/(time - self.birthtime)
 
                 if profit < 0 :
-                        print(profit)
-                        print(trade)
-                        print(order)
+                        print profit
+                        print trade
+                        print order
                         sys.exit()
 
                 if verbose: print('%s profit=%d balance=%d profit/time=%d' % (outstr, profit, self.balance, self.profitpertime))
@@ -474,560 +471,6 @@ class Trader_Giveaway(Trader):
                         self.lastquote=order
                 return order
 
-
-
-# Trader subclass ZI-C
-# After Gode & Sunder 1993
-class Trader_ZIC(Trader):
-
-        def getorder(self, time, countdown, lob):
-                if len(self.orders) < 1:
-                        # no orders: return NULL
-                        order = None
-                else:
-                        minprice = lob['bids']['worst']
-                        maxprice = lob['asks']['worst']
-                        qid = lob['QID']
-                        limit = self.orders[0].price
-                        otype = self.orders[0].otype
-                        if otype == 'Bid':
-                                quoteprice = random.randint(minprice, limit)
-                        else:
-                                quoteprice = random.randint(limit, maxprice)
-                                # NB should check it == 'Ask' and barf if not
-                        order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, qid)
-                        self.lastquote = order
-                return order
-
-
-# Trader subclass Shaver
-# shaves a penny off the best price
-# if there is no best price, creates "stub quote" at system max/min
-class Trader_Shaver(Trader):
-
-        def getorder(self, time, countdown, lob):
-                if len(self.orders) < 1:
-                        order = None
-                else:
-                        limitprice = self.orders[0].price
-                        otype = self.orders[0].otype
-                        if otype == 'Bid':
-                                if lob['bids']['n'] > 0:
-                                        quoteprice = lob['bids']['best'] + 1
-                                        if quoteprice > limitprice :
-                                                quoteprice = limitprice
-                                else:
-                                        quoteprice = lob['bids']['worst']
-                        else:
-                                if lob['asks']['n'] > 0:
-                                        quoteprice = lob['asks']['best'] - 1
-                                        if quoteprice < limitprice:
-                                                quoteprice = limitprice
-                                else:
-                                        quoteprice = lob['asks']['worst']
-                        order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, lob['QID'])
-                        self.lastquote = order
-                return order
-
-
-# Trader subclass Sniper
-# Based on Shaver,
-# "lurks" until time remaining < threshold% of the trading session
-# then gets increasing aggressive, increasing "shave thickness" as time runs out
-class Trader_Sniper(Trader):
-
-        def getorder(self, time, countdown, lob):
-                lurk_threshold = 0.2
-                shavegrowthrate = 3
-                shave = int(1.0 / (0.01 + countdown / (shavegrowthrate * lurk_threshold)))
-                if (len(self.orders) < 1) or (countdown > lurk_threshold):
-                        order = None
-                else:
-                        limitprice = self.orders[0].price
-                        otype = self.orders[0].otype
-
-                        if otype == 'Bid':
-                                if lob['bids']['n'] > 0:
-                                        quoteprice = lob['bids']['best'] + shave
-                                        if quoteprice > limitprice :
-                                                quoteprice = limitprice
-                                else:
-                                        quoteprice = lob['bids']['worst']
-                        else:
-                                if lob['asks']['n'] > 0:
-                                        quoteprice = lob['asks']['best'] - shave
-                                        if quoteprice < limitprice:
-                                                quoteprice = limitprice
-                                else:
-                                        quoteprice = lob['asks']['worst']
-                        order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, lob['QID'])
-                        self.lastquote = order
-                return order
-
-
-
-
-# Trader subclass ZIP
-# After Cliff 1997
-class Trader_ZIP(Trader):
-
-        # ZIP init key param-values are those used in Cliff's 1997 original HP Labs tech report
-        # NB this implementation keeps separate margin values for buying & selling,
-        #    so a single trader can both buy AND sell
-        #    -- in the original, traders were either buyers OR sellers
-
-        def __init__(self, ttype, tid, balance, time):
-                self.ttype = ttype
-                self.tid = tid
-                self.balance = balance
-                self.birthtime = time
-                self.profitpertime = 0
-                self.n_trades = 0
-                self.blotter = []
-                self.orders = []
-                self.n_quotes = 0
-                self.lastquote = None
-                self.job = None  # this gets switched to 'Bid' or 'Ask' depending on order-type
-                self.active = False  # gets switched to True while actively working an order
-                self.prev_change = 0  # this was called last_d in Cliff'97
-                self.beta = 0.1 + 0.4 * random.random()
-                self.momntm = 0.1 * random.random()
-                self.ca = 0.05  # self.ca & .cr were hard-coded in '97 but parameterised later
-                self.cr = 0.05
-                self.margin = None  # this was called profit in Cliff'97
-                self.margin_buy = -1.0 * (0.05 + 0.3 * random.random())
-                self.margin_sell = 0.05 + 0.3 * random.random()
-                self.price = None
-                self.limit = None
-                self.times = [0, 0, 0]
-                # memory of best price & quantity of best bid and ask, on LOB on previous update
-                self.prev_best_bid_p = None
-                self.prev_best_bid_q = None
-                self.prev_best_ask_p = None
-                self.prev_best_ask_q = None
-
-
-        def getorder(self, time, countdown, lob):
-                if len(self.orders) < 1:
-                        self.active = False
-                        order = None
-                else:
-                        self.active = True
-                        self.limit = self.orders[0].price
-                        self.job = self.orders[0].otype
-                        if self.job == 'Bid':
-                                # currently a buyer (working a bid order)
-                                self.margin = self.margin_buy
-                        else:
-                                # currently a seller (working a sell order)
-                                self.margin = self.margin_sell
-                        quoteprice = int(self.limit * (1 + self.margin))
-                        self.price = quoteprice
-
-                        order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, lob['QID'])
-                        self.lastquote = order
-                return order
-
-
-        # update margin on basis of what happened in market
-        def respond(self, time, lob, trade, verbose):
-                # ZIP trader responds to market events, altering its margin
-                # does this whether it currently has an order to work or not
-
-                def target_up(price):
-                        # generate a higher target price by randomly perturbing given price
-                        ptrb_abs = self.ca * random.random()  # absolute shift
-                        ptrb_rel = price * (1.0 + (self.cr * random.random()))  # relative shift
-                        target = int(round(ptrb_rel + ptrb_abs, 0))
-# #                        print('TargetUp: %d %d\n' % (price,target))
-                        return(target)
-
-
-                def target_down(price):
-                        # generate a lower target price by randomly perturbing given price
-                        ptrb_abs = self.ca * random.random()  # absolute shift
-                        ptrb_rel = price * (1.0 - (self.cr * random.random()))  # relative shift
-                        target = int(round(ptrb_rel - ptrb_abs, 0))
-# #                        print('TargetDn: %d %d\n' % (price,target))
-                        return(target)
-
-
-                def willing_to_trade(price):
-                        # am I willing to trade at this price?
-                        willing = False
-                        if self.job == 'Bid' and self.active and self.price >= price:
-                                willing = True
-                        if self.job == 'Ask' and self.active and self.price <= price:
-                                willing = True
-                        return willing
-
-
-                def profit_alter(price):
-                        oldprice = self.price
-                        diff = price - oldprice
-                        change = ((1.0 - self.momntm) * (self.beta * diff)) + (self.momntm * self.prev_change)
-                        self.prev_change = change
-                        newmargin = ((self.price + change) / self.limit) - 1.0
-
-                        if self.job == 'Bid':
-                                if newmargin < 0.0 :
-                                        self.margin_buy = newmargin
-                                        self.margin = newmargin
-                        else :
-                                if newmargin > 0.0 :
-                                        self.margin_sell = newmargin
-                                        self.margin = newmargin
-
-                        # set the price from limit and profit-margin
-                        self.price = int(round(self.limit * (1.0 + self.margin), 0))
-# #                        print('old=%d diff=%d change=%d price = %d\n' % (oldprice, diff, change, self.price))
-
-
-                # what, if anything, has happened on the bid LOB?
-                bid_improved = False
-                bid_hit = False
-                lob_best_bid_p = lob['bids']['best']
-                lob_best_bid_q = None
-                if lob_best_bid_p != None:
-                        # non-empty bid LOB
-                        lob_best_bid_q = lob['bids']['lob'][-1][1]
-                        if self.prev_best_bid_p is None:
-                            self.prev_best_bid_p = lob_best_bid_p
-                        # if self.prev_best_bid_p < lob_best_bid_p :
-                        #         # best bid has improved
-                        #         # NB doesn't check if the improvement was by self
-                                # bid_improved = True
-                        elif trade != None and ((self.prev_best_bid_p > lob_best_bid_p) or ((self.prev_best_bid_p == lob_best_bid_p) and (self.prev_best_bid_q > lob_best_bid_q))):
-                                # previous best bid was hit
-                                bid_hit = True
-                elif self.prev_best_bid_p != None:
-                        # the bid LOB has been emptied: was it cancelled or hit?
-                        last_tape_item = lob['tape'][-1]
-                        if last_tape_item['type'] == 'Cancel' :
-                                bid_hit = False
-                        else:
-                                bid_hit = True
-
-                # what, if anything, has happened on the ask LOB?
-                ask_improved = False
-                ask_lifted = False
-                lob_best_ask_p = lob['asks']['best']
-                lob_best_ask_q = None
-                if lob_best_ask_p != None:
-                        # non-empty ask LOB
-                        lob_best_ask_q = lob['asks']['lob'][0][1]
-                        if self.prev_best_ask_p is None:
-                            self.prev_best_ask_p = lob_best_ask_p
-                        # if self.prev_best_ask_p > lob_best_ask_p :
-                        #         # best ask has improved -- NB doesn't check if the improvement was by self
-                        #         ask_improved = True
-                        elif trade != None and ((self.prev_best_ask_p < lob_best_ask_p) or ((self.prev_best_ask_p == lob_best_ask_p) and (self.prev_best_ask_q > lob_best_ask_q))):
-                                # trade happened and best ask price has got worse, or stayed same but quantity reduced -- assume previous best ask was lifted
-                                ask_lifted = True
-                elif self.prev_best_ask_p != None:
-                        # the ask LOB is empty now but was not previously: canceled or lifted?
-                        last_tape_item = lob['tape'][-1]
-                        if last_tape_item['type'] == 'Cancel' :
-                                ask_lifted = False
-                        else:
-                                ask_lifted = True
-
-
-                if verbose and (bid_improved or bid_hit or ask_improved or ask_lifted):
-                        print ('B_improved', bid_improved, 'B_hit', bid_hit, 'A_improved', ask_improved, 'A_lifted', ask_lifted)
-
-
-                deal = bid_hit or ask_lifted
-
-                if self.job == 'Ask':
-                        # seller
-                        if deal :
-                                tradeprice = trade['price']
-                                if self.price <= tradeprice:
-                                        # could sell for more? raise margin
-                                        target_price = target_up(tradeprice)
-                                        profit_alter(target_price)
-                                elif ask_lifted and self.active and not willing_to_trade(tradeprice):
-                                        # wouldnt have got this deal, still working order, so reduce margin
-                                        target_price = target_down(tradeprice)
-                                        profit_alter(target_price)
-                        else:
-                                # no deal: aim for a target price higher than best bid
-                                if ask_improved and self.price > lob_best_ask_p:
-                                        if lob_best_bid_p != None:
-                                                target_price = target_up(lob_best_bid_p)
-                                        else:
-                                                target_price = lob['asks']['worst']  # stub quote
-                                        profit_alter(target_price)
-
-                if self.job == 'Bid':
-                        # buyer
-                        if deal :
-                                tradeprice = trade['price']
-                                if self.price >= tradeprice:
-                                        # could buy for less? raise margin (i.e. cut the price)
-                                        target_price = target_down(tradeprice)
-                                        profit_alter(target_price)
-                                elif bid_hit and self.active and not willing_to_trade(tradeprice):
-                                        # wouldnt have got this deal, still working order, so reduce margin
-                                        target_price = target_up(tradeprice)
-                                        profit_alter(target_price)
-                        else:
-                                # no deal: aim for target price lower than best ask
-                                if bid_improved and self.price < lob_best_bid_p:
-                                        if lob_best_ask_p != None:
-                                                target_price = target_down(lob_best_ask_p)
-                                        else:
-                                                target_price = lob['bids']['worst']  # stub quote
-                                        profit_alter(target_price)
-
-
-                # remember the best LOB data ready for next response
-                self.prev_best_bid_p = lob_best_bid_p
-                self.prev_best_bid_q = lob_best_bid_q
-                self.prev_best_ask_p = lob_best_ask_p
-                self.prev_best_ask_q = lob_best_ask_q
-
-
-class Trader_GDX(Trader):
-
-        def __init__(self, ttype, tid, balance, time):
-                self.ttype = ttype
-                self.tid = tid
-                self.balance = balance
-                self.birthtime = time
-                self.profitpertime = 0
-                self.n_trades = 0
-                self.blotter = []
-                self.orders = []
-                self.prev_orders = []
-                self.n_quotes = 0
-                self.lastquote = None
-                self.job = None  # this gets switched to 'Bid' or 'Ask' depending on order-type
-                self.active = False  # gets switched to True while actively working an order
-                self.times = [0, 0, 0]
-
-                #memory of all bids and asks and accepted bids and asks
-                self.outstanding_bids = []
-                self.outstanding_asks = []
-                self.accepted_asks = []
-                self.accepted_bids = []
-
-                self.price = -1
-
-                # memory of best price & quantity of best bid and ask, on LOB on previous update
-                self.prev_best_bid_p = None
-                self.prev_best_bid_q = None
-                self.prev_best_ask_p = None
-                self.prev_best_ask_q = None
-
-                self.first_turn = True
-
-                self.gamma = 0.9
-
-                self.holdings = 15
-                self.remaining_offer_ops = 15
-                self.values = [[0 for n in range(self.remaining_offer_ops)] for m in range(self.holdings)]
-
-
-        def getorder(self, time, countdown, lob):
-                if len(self.orders) < 1:
-                        self.active = False
-                        order = None
-                else:
-                        self.active = True
-                        self.limit = self.orders[0].price
-                        self.job = self.orders[0].otype
-
-                        #calculate price
-                        if self.job == 'Bid':
-                                self.price = self.calc_p_bid(self.holdings - 1, self.remaining_offer_ops - 1)
-                        if self.job == 'Ask':
-                                self.price = self.calc_p_ask(self.holdings - 1, self.remaining_offer_ops - 1)
-
-                        order = Order(self.tid, self.job, self.price, self.orders[0].qty, time, lob['QID'])
-                        self.lastquote = order
-
-                if self.first_turn or self.price == -1:
-                        self.respond(time, lob, None, False)
-                        return None
-                return order
-
-        def calc_p_bid(self, m, n):
-                best_return = 0
-                best_bid = 0
-                second_best_return = 0
-                second_best_bid = 0
-
-                #first step size of 1 get best and 2nd best
-                for i in [x*2 for x in range(int(self.limit/2))]:
-                        thing = self.belief_buy(i) * ((self.limit - i) + self.gamma*self.values[m-1][n-1]) + (1-self.belief_buy(i) * self.gamma * self.values[m][n-1])
-                        if thing > best_return:
-                                second_best_bid = best_bid
-                                second_best_return = best_return
-                                best_return = thing
-                                best_bid = i
-
-                #always best bid largest one
-                if second_best_bid > best_bid:
-                        a = second_best_bid
-                        second_best_bid = best_bid
-                        best_bid = a
-
-                #then step size 0.05
-                for i in [x*0.05 for x in range(int(second_best_bid), int(best_bid))]:
-                        thing = self.belief_buy(i + second_best_bid) * ((self.limit - (i + second_best_bid)) + self.gamma*self.values[m-1][n-1]) + (1-self.belief_buy(i + second_best_bid) * self.gamma * self.values[m][n-1])
-                        if thing > best_return:
-                                best_return = thing
-                                best_bid = i + second_best_bid
-
-                return best_bid
-
-        def calc_p_ask(self, m, n):
-                best_return = 0
-                best_ask = self.limit
-                second_best_return = 0
-                second_best_ask = self.limit
-
-                #first step size of 1 get best and 2nd best
-                for i in [x*2 for x in range(int(self.limit/2))]:
-                        j = i + self.limit
-                        thing =  self.belief_sell(j) * ((j - self.limit) + self.gamma*self.values[m-1][n-1]) + (1-self.belief_sell(j) * self.gamma * self.values[m][n-1])
-                        if thing > best_return:
-                                second_best_ask = best_ask
-                                second_best_return = best_return
-                                best_return = thing
-                                best_ask = j
-                #always best ask largest one
-                if second_best_ask > best_ask:
-                        a = second_best_ask
-                        second_best_ask = best_ask
-                        best_ask = a
-
-                #then step size 0.05
-                for i in [x*0.05 for x in range(int(second_best_ask), int(best_ask))]:
-                        thing = self.belief_sell(i + second_best_ask) * (((i + second_best_ask) - self.limit) + self.gamma*self.values[m-1][n-1]) + (1-self.belief_sell(i + second_best_ask) * self.gamma * self.values[m][n-1])
-                        if thing > best_return:
-                                best_return = thing
-                                best_ask = i + second_best_ask
-
-                return best_ask
-
-        def belief_sell(self, price):
-                accepted_asks_greater = 0
-                bids_greater = 0
-                unaccepted_asks_lower = 0
-                for p in self.accepted_asks:
-                        if p >= price:
-                                accepted_asks_greater += 1
-                for p in [thing[0] for thing in self.outstanding_bids]:
-                        if p >= price:
-                                bids_greater += 1
-                for p in [thing[0] for thing in self.outstanding_asks]:
-                        if p <= price:
-                                unaccepted_asks_lower += 1
-
-                if accepted_asks_greater + bids_greater + unaccepted_asks_lower == 0:
-                        return 0
-                return (accepted_asks_greater + bids_greater) / (accepted_asks_greater + bids_greater + unaccepted_asks_lower)
-
-        def belief_buy(self, price):
-                accepted_bids_lower = 0
-                asks_lower = 0
-                unaccepted_bids_greater = 0
-                for p in self.accepted_bids:
-                        if p <= price:
-                                accepted_bids_lower += 1
-                for p in [thing[0] for thing in self.outstanding_asks]:
-                        if p <= price:
-                                asks_lower += 1
-                for p in [thing[0] for thing in self.outstanding_bids]:
-                        if p >= price:
-                                unaccepted_bids_greater += 1
-                if accepted_bids_lower + asks_lower + unaccepted_bids_greater == 0:
-                        return 0
-                return (accepted_bids_lower + asks_lower) / (accepted_bids_lower + asks_lower + unaccepted_bids_greater)
-
-        def respond(self, time, lob, trade, verbose):
-                # what, if anything, has happened on the bid LOB?
-                self.outstanding_bids = lob['bids']['lob']
-                bid_improved = False
-                bid_hit = False
-                lob_best_bid_p = lob['bids']['best']
-                lob_best_bid_q = None
-                if lob_best_bid_p != None:
-                        # non-empty bid LOB
-                        lob_best_bid_q = lob['bids']['lob'][-1][1]
-                        if self.prev_best_bid_p is None:
-                            self.prev_best_bid_p = lob_best_bid_p
-                        # if self.prev_best_bid_p < lob_best_bid_p :
-                        #         # best bid has improved
-                        #         # NB doesn't check if the improvement was by self
-                        #         bid_improved = True
-                        elif trade != None and ((self.prev_best_bid_p > lob_best_bid_p) or ((self.prev_best_bid_p == lob_best_bid_p) and (self.prev_best_bid_q > lob_best_bid_q))):
-                                # previous best bid was hit
-                                self.accepted_bids.append(self.prev_best_bid_p)
-                                bid_hit = True
-                elif self.prev_best_bid_p != None:
-                        # the bid LOB has been emptied: was it cancelled or hit?
-                        last_tape_item = lob['tape'][-1]
-                        if last_tape_item['type'] == 'Cancel' :
-                                bid_hit = False
-                        else:
-                                bid_hit = True
-
-                # what, if anything, has happened on the ask LOB?
-                self.outstanding_asks = lob['asks']['lob']
-                ask_improved = False
-                ask_lifted = False
-                lob_best_ask_p = lob['asks']['best']
-                lob_best_ask_q = None
-                if lob_best_ask_p != None:
-                        # non-empty ask LOB
-                        lob_best_ask_q = lob['asks']['lob'][0][1]
-                        if self.prev_best_ask_p is None:
-                            self.prev_best_ask_p = lob_best_ask_p
-                        # if self.prev_best_ask_p > lob_best_ask_p :
-                        #         # best ask has improved -- NB doesn't check if the improvement was by self
-                        #         ask_improved = True
-                        elif trade != None and ((self.prev_best_ask_p < lob_best_ask_p) or ((self.prev_best_ask_p == lob_best_ask_p) and (self.prev_best_ask_q > lob_best_ask_q))):
-                                # trade happened and best ask price has got worse, or stayed same but quantity reduced -- assume previous best ask was lifted
-                                self.accepted_asks.append(self.prev_best_ask_p)
-                                ask_lifted = True
-                elif self.prev_best_ask_p != None:
-                        # the ask LOB is empty now but was not previously: canceled or lifted?
-                        last_tape_item = lob['tape'][-1]
-                        if last_tape_item['type'] == 'Cancel' :
-                                ask_lifted = False
-                        else:
-                                ask_lifted = True
-
-
-                #populate expected values
-                if self.first_turn:
-                        # print("populating")
-                        self.first_turn = False
-                        for n in range(1, self.remaining_offer_ops):
-                                for m in range(1, self.holdings):
-                                            if self.job == 'Bid':
-                                                    #BUYER
-                                                    self.values[m][n] = self.calc_p_bid(m, n)
-
-                                            if self.job == 'Ask':
-                                                    #BUYER
-                                                    self.values[m][n] = self.calc_p_ask(m, n)
-                        # print("done")
-
-
-                deal = bid_hit or ask_lifted
-
-
-                # remember the best LOB data ready for next response
-                self.prev_best_bid_p = lob_best_bid_p
-                self.prev_best_bid_q = lob_best_bid_q
-                self.prev_best_ask_p = lob_best_ask_p
-                self.prev_best_ask_q = lob_best_ask_q
-
 # Trader subclass AA
 class Trader_AA(Trader):
 
@@ -1043,7 +486,6 @@ class Trader_AA(Trader):
                 self.orders = []
                 self.n_quotes = 0
                 self.lastquote = None
-                self.times = [0, 0, 0]
 
                 self.limit = None
                 self.job = None
@@ -1219,10 +661,8 @@ class Trader_AA(Trader):
                                         self.buy_target = l + (p-l)*(1-plus_thing)
                                 else:
                                         self.buy_target = p + (self.marketMax - p)*(bar_thing)
-                        if self.sell_target is None:
-                            self.sell_target = l
-                        elif self.sell_target < l:
-                            self.sell_target = l
+                        if self.sell_target < l:
+                                self.sell_target = l
 
         def getorder(self, time, countdown, lob):
                 if len(self.orders) < 1:
@@ -1283,19 +723,15 @@ class Trader_AA(Trader):
             # what, if anything, has happened on the bid LOB? Nicked from ZIP..
             bid_improved = False
             bid_hit = False
-
             lob_best_bid_p = lob['bids']['best']
             lob_best_bid_q = None
-            if lob_best_bid_p is not None:
+            if lob_best_bid_p != None:
                     # non-empty bid LOB
                     lob_best_bid_q = lob['bids']['lob'][-1][1]
-                    if self.prev_best_bid_p is None:
-                        self.prev_best_bid_p = lob_best_bid_p
-
-                    # if self.prev_best_bid_p < lob_best_bid_p :
-                    #         # best bid has improved
-                    #         # NB doesn't check if the improvement was by self
-                    #         bid_improved = True
+                    if self.prev_best_bid_p < lob_best_bid_p :
+                            # best bid has improved
+                            # NB doesn't check if the improvement was by self
+                            bid_improved = True
                     elif trade != None and ((self.prev_best_bid_p > lob_best_bid_p) or ((self.prev_best_bid_p == lob_best_bid_p) and (self.prev_best_bid_q > lob_best_bid_q))):
                             # previous best bid was hit
                             bid_hit = True
@@ -1312,14 +748,12 @@ class Trader_AA(Trader):
             ask_lifted = False
             lob_best_ask_p = lob['asks']['best']
             lob_best_ask_q = None
-            if lob_best_ask_p is not None:
+            if lob_best_ask_p != None:
                     # non-empty ask LOB
                     lob_best_ask_q = lob['asks']['lob'][0][1]
-                    if self.prev_best_ask_p is None:
-                        self.prev_best_ask_p = lob_best_ask_p
-                    # if self.prev_best_ask_p > lob_best_ask_p :
-                    #         # best ask has improved -- NB doesn't check if the improvement was by self
-                    #         ask_improved = True
+                    if self.prev_best_ask_p > lob_best_ask_p :
+                            # best ask has improved -- NB doesn't check if the improvement was by self
+                            ask_improved = True
                     elif trade != None and ((self.prev_best_ask_p < lob_best_ask_p) or ((self.prev_best_ask_p == lob_best_ask_p) and (self.prev_best_ask_q > lob_best_ask_q))):
                             # trade happened and best ask price has got worse, or stayed same but quantity reduced -- assume previous best ask was lifted
                             ask_lifted = True
@@ -1355,6 +789,803 @@ class Trader_AA(Trader):
                     #print 'sell: ', self.sell_target, 'buy: ', self.buy_target, 'limit:', self.limit, 'eq: ',  self.estimated_equilibrium[-1], 'sell_r: ', self.sell_r, 'buy_r: ', self.buy_r, '\n'
 
 
+
+# Trader subclass ZI-C
+# After Gode & Sunder 1993
+class Trader_ZIC(Trader):
+
+        def getorder(self, time, countdown, lob):
+                if len(self.orders) < 1:
+                        # no orders: return NULL
+                        order = None
+                else:
+                        minprice = lob['bids']['worst']
+                        maxprice = lob['asks']['worst']
+                        qid = lob['QID']
+                        limit = self.orders[0].price
+                        otype = self.orders[0].otype
+                        if otype == 'Bid':
+                                quoteprice = random.randint(minprice, limit)
+                        else:
+                                quoteprice = random.randint(limit, maxprice)
+                                # NB should check it == 'Ask' and barf if not
+                        order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, qid)
+                        self.lastquote = order
+                return order
+
+
+# Trader subclass Shaver
+# shaves a penny off the best price
+# if there is no best price, creates "stub quote" at system max/min
+class Trader_Shaver(Trader):
+
+        def getorder(self, time, countdown, lob):
+                if len(self.orders) < 1:
+                        order = None
+                else:
+                        limitprice = self.orders[0].price
+                        otype = self.orders[0].otype
+                        if otype == 'Bid':
+                                if lob['bids']['n'] > 0:
+                                        quoteprice = lob['bids']['best'] + 1
+                                        if quoteprice > limitprice :
+                                                quoteprice = limitprice
+                                else:
+                                        quoteprice = lob['bids']['worst']
+                        else:
+                                if lob['asks']['n'] > 0:
+                                        quoteprice = lob['asks']['best'] - 1
+                                        if quoteprice < limitprice:
+                                                quoteprice = limitprice
+                                else:
+                                        quoteprice = lob['asks']['worst']
+                        order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, lob['QID'])
+                        self.lastquote = order
+                return order
+
+
+# Trader subclass Sniper
+# Based on Shaver,
+# "lurks" until time remaining < threshold% of the trading session
+# then gets increasing aggressive, increasing "shave thickness" as time runs out
+class Trader_Sniper(Trader):
+
+        def getorder(self, time, countdown, lob):
+                lurk_threshold = 0.2
+                shavegrowthrate = 3
+                shave = int(1.0 / (0.01 + countdown / (shavegrowthrate * lurk_threshold)))
+                if (len(self.orders) < 1) or (countdown > lurk_threshold):
+                        order = None
+                else:
+                        limitprice = self.orders[0].price
+                        otype = self.orders[0].otype
+
+                        if otype == 'Bid':
+                                if lob['bids']['n'] > 0:
+                                        quoteprice = lob['bids']['best'] + shave
+                                        if quoteprice > limitprice :
+                                                quoteprice = limitprice
+                                else:
+                                        quoteprice = lob['bids']['worst']
+                        else:
+                                if lob['asks']['n'] > 0:
+                                        quoteprice = lob['asks']['best'] - shave
+                                        if quoteprice < limitprice:
+                                                quoteprice = limitprice
+                                else:
+                                        quoteprice = lob['asks']['worst']
+                        order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, lob['QID'])
+                        self.lastquote = order
+                return order
+
+
+
+
+# Trader subclass ZIP
+# After Cliff 1997
+class Trader_ASAD(Trader):
+
+        # ZIP init key param-values are those used in Cliff's 1997 original HP Labs tech report
+        # NB this implementation keeps separate margin values for buying & selling,
+        #    so a single trader can both buy AND sell
+        #    -- in the original, traders were either buyers OR sellers
+
+        def __init__(self, ttype, tid, balance, time):
+                self.ttype = ttype
+                self.tid = tid
+                self.balance = balance
+                self.birthtime = time
+                self.profitpertime = 0
+                self.n_trades = 0
+                self.blotter = []
+                self.orders = []
+                self.prev_orders = []
+                self.n_quotes = 0
+                self.lastquote = None
+                self.job = None  # this gets switched to 'Bid' or 'Ask' depending on order-type
+                self.active = False  # gets switched to True while actively working an order
+                self.prev_change = 0  # this was called last_d in Cliff'97
+                self.beta = 0.1 + 0.4 * random.random()
+                self.momntm = 0.1 * random.random()
+                self.ca = 0.05  # self.ca & .cr were hard-coded in '97 but parameterised later
+                self.cr = 0.05
+                self.margin = None  # this was called profit in Cliff'97
+                self.margin_buy = -1.0 * (0.05 + 0.3 * random.random())
+                self.margin_sell = 0.05 + 0.3 * random.random()
+                self.price = None
+                self.limit = None
+                self.phi = 0 #measure of market shock for ASAD
+                # memory of best price & quantity of best bid and ask, on LOB on previous update
+                self.prev_best_bid_p = None
+                self.prev_best_bid_q = None
+                self.prev_best_ask_p = None
+                self.prev_best_ask_q = None
+
+
+        def getorder(self, time, countdown, lob):
+                if len(self.orders) < 1:
+                        self.active = False
+                        order = None
+                else:
+                        self.active = True
+                        self.limit = self.orders[0].price
+                        self.job = self.orders[0].otype
+                        if self.job == 'Bid':
+                                # currently a buyer (working a bid order)
+                                self.margin = self.margin_buy
+                        else:
+                                # currently a seller (working a sell order)
+                                self.margin = self.margin_sell
+                        quoteprice = int(self.limit * (1 + self.margin))
+                        self.price = quoteprice
+
+                        order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, lob['QID'])
+                        self.lastquote = order
+                        self.prev_orders.append(order)
+                return order
+
+
+        # update margin on basis of what happened in market
+        def respond(self, time, lob, trade, verbose):
+                # ZIP trader responds to market events, altering its margin
+                # does this whether it currently has an order to work or not
+
+                def target_up(price):
+                        # generate a higher target price by randomly perturbing given price
+                        ptrb_abs = self.ca * random.random()  # absolute shift
+                        ptrb_rel = price * (1.0 + (self.cr * random.random()))  # relative shift
+                        target = int(round(ptrb_rel + ptrb_abs, 0))
+# #                        print('TargetUp: %d %d\n' % (price,target))
+                        return(target)
+
+
+                def target_down(price):
+                        # generate a lower target price by randomly perturbing given price
+                        ptrb_abs = self.ca * random.random()  # absolute shift
+                        ptrb_rel = price * (1.0 - (self.cr * random.random()))  # relative shift
+                        target = int(round(ptrb_rel - ptrb_abs, 0))
+# #                        print('TargetDn: %d %d\n' % (price,target))
+                        return(target)
+
+
+                def willing_to_trade(price):
+                        # am I willing to trade at this price?
+                        willing = False
+                        if self.job == 'Bid' and self.active and self.price >= price:
+                                willing = True
+                        if self.job == 'Ask' and self.active and self.price <= price:
+                                willing = True
+                        return willing
+
+
+                def profit_alter(price):
+                        oldprice = self.price
+                        diff = price - oldprice
+                        change = ((1.0 - self.momntm) * (self.beta * diff)) + (self.momntm * self.prev_change)
+                        self.prev_change = change
+                        newmargin = ((self.price + change) / self.limit) - 1.0
+
+                        if self.job == 'Bid':
+                                if newmargin < 0.0 :
+                                        self.margin_buy = newmargin
+                                        self.margin = newmargin
+                        else :
+                                if newmargin > 0.0 :
+                                        self.margin_sell = newmargin
+                                        self.margin = newmargin
+
+                        # set the price from limit and profit-margin
+                        self.price = int(round(self.limit * (1.0 + self.margin), 0))
+# #                        print('old=%d diff=%d change=%d price = %d\n' % (oldprice, diff, change, self.price))
+
+                def calc_phi():
+                        if len(self.prev_orders) < 20:
+                                return
+                        sumxy = 0
+                        sumx = 0
+                        sumxsq = 0
+                        sumy = 0
+                        for i in range(20):
+                                sumxy = sumxy + i * self.prev_orders[-20:][i].price
+                                sumx =  sumx + i
+                                sumxsq = sumxsq + i*i
+                                sumy = sumy + self.prev_orders[-20:][i].price
+                        delta = (sumxy - (sumy * sumx / 20)) / (sumxsq - (sumx * sumx / 20))
+                        if delta < 0:
+                                self.phi = -math.log(1-delta)
+                        else:
+                                self.phi = math.log(1+delta)
+
+                # what, if anything, has happened on the bid LOB?
+                bid_improved = False
+                bid_hit = False
+                lob_best_bid_p = lob['bids']['best']
+                lob_best_bid_q = None
+                if lob_best_bid_p != None:
+                        # non-empty bid LOB
+                        lob_best_bid_q = lob['bids']['lob'][-1][1]
+                        if self.prev_best_bid_p < lob_best_bid_p :
+                                # best bid has improved
+                                # NB doesn't check if the improvement was by self
+                                bid_improved = True
+                        elif trade != None and ((self.prev_best_bid_p > lob_best_bid_p) or ((self.prev_best_bid_p == lob_best_bid_p) and (self.prev_best_bid_q > lob_best_bid_q))):
+                                # previous best bid was hit
+                                bid_hit = True
+                elif self.prev_best_bid_p != None:
+                        # the bid LOB has been emptied: was it cancelled or hit?
+                        last_tape_item = lob['tape'][-1]
+                        if last_tape_item['type'] == 'Cancel' :
+                                bid_hit = False
+                        else:
+                                bid_hit = True
+
+                # what, if anything, has happened on the ask LOB?
+                ask_improved = False
+                ask_lifted = False
+                lob_best_ask_p = lob['asks']['best']
+                lob_best_ask_q = None
+                if lob_best_ask_p != None:
+                        # non-empty ask LOB
+                        lob_best_ask_q = lob['asks']['lob'][0][1]
+                        if self.prev_best_ask_p > lob_best_ask_p :
+                                # best ask has improved -- NB doesn't check if the improvement was by self
+                                ask_improved = True
+                        elif trade != None and ((self.prev_best_ask_p < lob_best_ask_p) or ((self.prev_best_ask_p == lob_best_ask_p) and (self.prev_best_ask_q > lob_best_ask_q))):
+                                # trade happened and best ask price has got worse, or stayed same but quantity reduced -- assume previous best ask was lifted
+                                ask_lifted = True
+                elif self.prev_best_ask_p != None:
+                        # the ask LOB is empty now but was not previously: canceled or lifted?
+                        last_tape_item = lob['tape'][-1]
+                        if last_tape_item['type'] == 'Cancel' :
+                                ask_lifted = False
+                        else:
+                                ask_lifted = True
+
+
+                if verbose and (bid_improved or bid_hit or ask_improved or ask_lifted):
+                        print ('B_improved', bid_improved, 'B_hit', bid_hit, 'A_improved', ask_improved, 'A_lifted', ask_lifted)
+
+
+                deal = bid_hit or ask_lifted
+
+                calc_phi()
+
+
+                if self.job == 'Ask':
+                        # seller
+                        if deal :
+                                tradeprice = trade['price']
+                                if self.price <= tradeprice:
+                                        # could sell for more? raise margin
+                                        target_price = target_up(tradeprice)
+                                        if self.phi > 1:
+                                                target_price = target_up(target_price)
+                                        profit_alter(target_price)
+                                elif ask_lifted and self.active and not willing_to_trade(tradeprice):
+                                        # wouldnt have got this deal, still working order, so reduce margin
+                                        target_price = target_down(tradeprice)
+                                        if self.phi > 1:
+                                                target_price = target_up(target_price)
+                                        profit_alter(target_price)
+                        else:
+                                # no deal: aim for a target price higher than best bid
+                                if ask_improved and self.price > lob_best_ask_p:
+                                        if lob_best_bid_p != None:
+                                                target_price = target_up(lob_best_bid_p)
+                                        else:
+                                                target_price = lob['asks']['worst']  # stub quote
+                                        profit_alter(target_price)
+
+                if self.job == 'Bid':
+                        # buyer
+                        if deal :
+                                tradeprice = trade['price']
+                                if self.price >= tradeprice:
+                                        # could buy for less? raise margin (i.e. cut the price)
+                                        target_price = target_down(tradeprice)
+                                        if self.phi < -1:
+                                                target_price = target_up(target_price)
+                                        profit_alter(target_price)
+                                elif bid_hit and self.active and not willing_to_trade(tradeprice):
+                                        # wouldnt have got this deal, still working order, so reduce margin
+                                        target_price = target_up(tradeprice)
+                                        if self.phi < -1:
+                                                target_price = target_up(target_price)
+                                        profit_alter(target_price)
+                        else:
+                                # no deal: aim for target price lower than best ask
+                                if bid_improved and self.price < lob_best_bid_p:
+                                        if lob_best_ask_p != None:
+                                                target_price = target_down(lob_best_ask_p)
+                                        else:
+                                                target_price = lob['bids']['worst']  # stub quote
+                                        profit_alter(target_price)
+
+
+                # remember the best LOB data ready for next response
+                self.prev_best_bid_p = lob_best_bid_p
+                self.prev_best_bid_q = lob_best_bid_q
+                self.prev_best_ask_p = lob_best_ask_p
+                self.prev_best_ask_q = lob_best_ask_q
+
+
+# Trader subclass ZIP
+# After Cliff 1997
+class Trader_GDX(Trader):
+
+        def __init__(self, ttype, tid, balance, time):
+                self.ttype = ttype
+                self.tid = tid
+                self.balance = balance
+                self.birthtime = time
+                self.profitpertime = 0
+                self.n_trades = 0
+                self.blotter = []
+                self.orders = []
+                self.prev_orders = []
+                self.n_quotes = 0
+                self.lastquote = None
+                self.job = None  # this gets switched to 'Bid' or 'Ask' depending on order-type
+                self.active = False  # gets switched to True while actively working an order
+
+                #memory of all bids and asks and accepted bids and asks
+                self.outstanding_bids = []
+                self.outstanding_asks = []
+                self.accepted_asks = []
+                self.accepted_bids = []
+
+                self.price = -1
+
+                # memory of best price & quantity of best bid and ask, on LOB on previous update
+                self.prev_best_bid_p = None
+                self.prev_best_bid_q = None
+                self.prev_best_ask_p = None
+                self.prev_best_ask_q = None
+
+                self.first_turn = True
+
+                self.gamma = 0.1
+
+                self.holdings = 10
+                self.remaining_offer_ops = 10
+                self.values = [[0 for n in range(self.remaining_offer_ops)] for m in range(self.holdings)]
+
+
+        def getorder(self, time, countdown, lob):
+                if len(self.orders) < 1:
+                        self.active = False
+                        order = None
+                else:
+                        self.active = True
+                        self.limit = self.orders[0].price
+                        self.job = self.orders[0].otype
+
+                        #calculate price
+                        if self.job == 'Bid':
+                                self.price = self.calc_p_bid(self.holdings - 1, self.remaining_offer_ops - 1)
+                        if self.job == 'Ask':
+                                self.price = self.calc_p_ask(self.holdings - 1, self.remaining_offer_ops - 1)
+
+                        order = Order(self.tid, self.job, self.price, self.orders[0].qty, time, lob['QID'])
+                        self.lastquote = order
+
+                if self.first_turn or self.price == -1:
+                        return None
+                return order
+
+        def calc_p_bid(self, m, n):
+                best_return = 0
+                best_bid = 0
+                second_best_return = 0
+                second_best_bid = 0
+
+                #first step size of 1 get best and 2nd best
+                for i in [x*2 for x in range(int(self.limit/2))]:
+                        thing = self.belief_buy(i) * ((self.limit - i) + self.gamma*self.values[m-1][n-1]) + (1-self.belief_buy(i) * self.gamma * self.values[m][n-1])
+                        if thing > best_return:
+                                second_best_bid = best_bid
+                                second_best_return = best_return
+                                best_return = thing
+                                best_bid = i
+
+                #always best bid largest one
+                if second_best_bid > best_bid:
+                        a = second_best_bid
+                        second_best_bid = best_bid
+                        best_bid = a
+
+                #then step size 0.05
+                for i in [x*0.05 for x in range(int(second_best_bid), int(best_bid))]:
+                        thing = self.belief_buy(i + second_best_bid) * ((self.limit - (i + second_best_bid)) + self.gamma*self.values[m-1][n-1]) + (1-self.belief_buy(i + second_best_bid) * self.gamma * self.values[m][n-1])
+                        if thing > best_return:
+                                best_return = thing
+                                best_bid = i + second_best_bid
+
+                return best_bid
+
+        def calc_p_ask(self, m, n):
+                best_return = 0
+                best_ask = self.limit
+                second_best_return = 0
+                second_best_ask = self.limit
+
+                #first step size of 1 get best and 2nd best
+                for i in [x*2 for x in range(int(self.limit/2))]:
+                        j = i + self.limit
+                        thing =  self.belief_sell(j) * ((j - self.limit) + self.gamma*self.values[m-1][n-1]) + (1-self.belief_sell(j) * self.gamma * self.values[m][n-1])
+                        if thing > best_return:
+                                second_best_ask = best_ask
+                                second_best_return = best_return
+                                best_return = thing
+                                best_ask = j
+                #always best ask largest one
+                if second_best_ask > best_ask:
+                        a = second_best_ask
+                        second_best_ask = best_ask
+                        best_ask = a
+
+                #then step size 0.05
+                for i in [x*0.05 for x in range(int(second_best_ask), int(best_ask))]:
+                        thing = self.belief_sell(i + second_best_ask) * (((i + second_best_ask) - self.limit) + self.gamma*self.values[m-1][n-1]) + (1-self.belief_sell(i + second_best_ask) * self.gamma * self.values[m][n-1])
+                        if thing > best_return:
+                                best_return = thing
+                                best_ask = i + second_best_ask
+
+                return best_ask
+
+        def belief_sell(self, price):
+                accepted_asks_greater = 0
+                bids_greater = 0
+                unaccepted_asks_lower = 0
+                for p in self.accepted_asks:
+                        if p >= price:
+                                accepted_asks_greater += 1
+                for p in [thing[0] for thing in self.outstanding_bids]:
+                        if p >= price:
+                                bids_greater += 1
+                for p in [thing[0] for thing in self.outstanding_asks]:
+                        if p <= price:
+                                unaccepted_asks_lower += 1
+
+                if accepted_asks_greater + bids_greater + unaccepted_asks_lower == 0:
+                        return 0
+                return (accepted_asks_greater + bids_greater) / (accepted_asks_greater + bids_greater + unaccepted_asks_lower)
+
+        def belief_buy(self, price):
+                accepted_bids_lower = 0
+                asks_lower = 0
+                unaccepted_bids_greater = 0
+                for p in self.accepted_bids:
+                        if p <= price:
+                                accepted_bids_lower += 1
+                for p in [thing[0] for thing in self.outstanding_asks]:
+                        if p <= price:
+                                asks_lower += 1
+                for p in [thing[0] for thing in self.outstanding_bids]:
+                        if p >= price:
+                                unaccepted_bids_greater += 1
+                if accepted_bids_lower + asks_lower + unaccepted_bids_greater == 0:
+                        return 0
+                return (accepted_bids_lower + asks_lower) / (accepted_bids_lower + asks_lower + unaccepted_bids_greater)
+
+        def respond(self, time, lob, trade, verbose):
+                # what, if anything, has happened on the bid LOB?
+                self.outstanding_bids = lob['bids']['lob']
+                bid_improved = False
+                bid_hit = False
+                lob_best_bid_p = lob['bids']['best']
+                lob_best_bid_q = None
+                if lob_best_bid_p != None:
+                        # non-empty bid LOB
+                        lob_best_bid_q = lob['bids']['lob'][-1][1]
+                        if self.prev_best_bid_p < lob_best_bid_p :
+                                # best bid has improved
+                                # NB doesn't check if the improvement was by self
+                                bid_improved = True
+                        elif trade != None and ((self.prev_best_bid_p > lob_best_bid_p) or ((self.prev_best_bid_p == lob_best_bid_p) and (self.prev_best_bid_q > lob_best_bid_q))):
+                                # previous best bid was hit
+                                self.accepted_bids.append(self.prev_best_bid_p)
+                                bid_hit = True
+                elif self.prev_best_bid_p != None:
+                        # the bid LOB has been emptied: was it cancelled or hit?
+                        last_tape_item = lob['tape'][-1]
+                        if last_tape_item['type'] == 'Cancel' :
+                                bid_hit = False
+                        else:
+                                bid_hit = True
+
+                # what, if anything, has happened on the ask LOB?
+                self.outstanding_asks = lob['asks']['lob']
+                ask_improved = False
+                ask_lifted = False
+                lob_best_ask_p = lob['asks']['best']
+                lob_best_ask_q = None
+                if lob_best_ask_p != None:
+                        # non-empty ask LOB
+                        lob_best_ask_q = lob['asks']['lob'][0][1]
+                        if self.prev_best_ask_p > lob_best_ask_p :
+                                # best ask has improved -- NB doesn't check if the improvement was by self
+                                ask_improved = True
+                        elif trade != None and ((self.prev_best_ask_p < lob_best_ask_p) or ((self.prev_best_ask_p == lob_best_ask_p) and (self.prev_best_ask_q > lob_best_ask_q))):
+                                # trade happened and best ask price has got worse, or stayed same but quantity reduced -- assume previous best ask was lifted
+                                self.accepted_asks.append(self.prev_best_ask_p)
+                                ask_lifted = True
+                elif self.prev_best_ask_p != None:
+                        # the ask LOB is empty now but was not previously: canceled or lifted?
+                        last_tape_item = lob['tape'][-1]
+                        if last_tape_item['type'] == 'Cancel' :
+                                ask_lifted = False
+                        else:
+                                ask_lifted = True
+
+
+                #populate expected values
+                if self.first_turn:
+                        print "populating"
+                        self.first_turn = False
+                        for n in range(1, self.remaining_offer_ops):
+                                for m in range(1, self.holdings):
+                                            if self.job == 'Bid':
+                                                    #BUYER
+                                                    self.values[m][n] = self.calc_p_bid(m, n)
+
+                                            if self.job == 'Ask':
+                                                    #BUYER
+                                                    self.values[m][n] = self.calc_p_ask(m, n)
+                        print "done"
+
+
+                deal = bid_hit or ask_lifted
+
+
+                # remember the best LOB data ready for next response
+                self.prev_best_bid_p = lob_best_bid_p
+                self.prev_best_bid_q = lob_best_bid_q
+                self.prev_best_ask_p = lob_best_ask_p
+                self.prev_best_ask_q = lob_best_ask_q
+
+
+
+
+# Trader subclass ZIP
+# After Cliff 1997
+class Trader_ZIP(Trader):
+
+        # ZIP init key param-values are those used in Cliff's 1997 original HP Labs tech report
+        # NB this implementation keeps separate margin values for buying & selling,
+        #    so a single trader can both buy AND sell
+        #    -- in the original, traders were either buyers OR sellers
+
+        def __init__(self, ttype, tid, balance, time):
+                self.ttype = ttype
+                self.tid = tid
+                self.balance = balance
+                self.birthtime = time
+                self.profitpertime = 0
+                self.n_trades = 0
+                self.blotter = []
+                self.orders = []
+                self.n_quotes = 0
+                self.lastquote = None
+                self.job = None  # this gets switched to 'Bid' or 'Ask' depending on order-type
+                self.active = False  # gets switched to True while actively working an order
+                self.prev_change = 0  # this was called last_d in Cliff'97
+                self.beta = 0.1 + 0.4 * random.random()
+                self.momntm = 0.1 * random.random()
+                self.ca = 0.05  # self.ca & .cr were hard-coded in '97 but parameterised later
+                self.cr = 0.05
+                self.margin = None  # this was called profit in Cliff'97
+                self.margin_buy = -1.0 * (0.05 + 0.3 * random.random())
+                self.margin_sell = 0.05 + 0.3 * random.random()
+                self.price = None
+                self.limit = None
+                # memory of best price & quantity of best bid and ask, on LOB on previous update
+                self.prev_best_bid_p = None
+                self.prev_best_bid_q = None
+                self.prev_best_ask_p = None
+                self.prev_best_ask_q = None
+
+
+        def getorder(self, time, countdown, lob):
+                if len(self.orders) < 1:
+                        self.active = False
+                        order = None
+                else:
+                        self.active = True
+                        self.limit = self.orders[0].price
+                        self.job = self.orders[0].otype
+                        if self.job == 'Bid':
+                                # currently a buyer (working a bid order)
+                                self.margin = self.margin_buy
+                        else:
+                                # currently a seller (working a sell order)
+                                self.margin = self.margin_sell
+                        quoteprice = int(self.limit * (1 + self.margin))
+                        self.price = quoteprice
+
+                        order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, lob['QID'])
+                        self.lastquote = order
+                return order
+
+
+        # update margin on basis of what happened in market
+        def respond(self, time, lob, trade, verbose):
+                # ZIP trader responds to market events, altering its margin
+                # does this whether it currently has an order to work or not
+
+                def target_up(price):
+                        # generate a higher target price by randomly perturbing given price
+                        ptrb_abs = self.ca * random.random()  # absolute shift
+                        ptrb_rel = price * (1.0 + (self.cr * random.random()))  # relative shift
+                        target = int(round(ptrb_rel + ptrb_abs, 0))
+# #                        print('TargetUp: %d %d\n' % (price,target))
+                        return(target)
+
+
+                def target_down(price):
+                        # generate a lower target price by randomly perturbing given price
+                        ptrb_abs = self.ca * random.random()  # absolute shift
+                        ptrb_rel = price * (1.0 - (self.cr * random.random()))  # relative shift
+                        target = int(round(ptrb_rel - ptrb_abs, 0))
+# #                        print('TargetDn: %d %d\n' % (price,target))
+                        return(target)
+
+
+                def willing_to_trade(price):
+                        # am I willing to trade at this price?
+                        willing = False
+                        if self.job == 'Bid' and self.active and self.price >= price:
+                                willing = True
+                        if self.job == 'Ask' and self.active and self.price <= price:
+                                willing = True
+                        return willing
+
+
+                def profit_alter(price):
+                        oldprice = self.price
+                        diff = price - oldprice
+                        change = ((1.0 - self.momntm) * (self.beta * diff)) + (self.momntm * self.prev_change)
+                        self.prev_change = change
+                        newmargin = ((self.price + change) / self.limit) - 1.0
+
+                        if self.job == 'Bid':
+                                if newmargin < 0.0 :
+                                        self.margin_buy = newmargin
+                                        self.margin = newmargin
+                        else :
+                                if newmargin > 0.0 :
+                                        self.margin_sell = newmargin
+                                        self.margin = newmargin
+
+                        # set the price from limit and profit-margin
+                        self.price = int(round(self.limit * (1.0 + self.margin), 0))
+# #                        print('old=%d diff=%d change=%d price = %d\n' % (oldprice, diff, change, self.price))
+
+
+                # what, if anything, has happened on the bid LOB?
+                bid_improved = False
+                bid_hit = False
+                lob_best_bid_p = lob['bids']['best']
+                lob_best_bid_q = None
+                if lob_best_bid_p != None:
+                        # non-empty bid LOB
+                        lob_best_bid_q = lob['bids']['lob'][-1][1]
+                        if self.prev_best_bid_p < lob_best_bid_p :
+                                # best bid has improved
+                                # NB doesn't check if the improvement was by self
+                                bid_improved = True
+                        elif trade != None and ((self.prev_best_bid_p > lob_best_bid_p) or ((self.prev_best_bid_p == lob_best_bid_p) and (self.prev_best_bid_q > lob_best_bid_q))):
+                                # previous best bid was hit
+                                bid_hit = True
+                elif self.prev_best_bid_p != None:
+                        # the bid LOB has been emptied: was it cancelled or hit?
+                        last_tape_item = lob['tape'][-1]
+                        if last_tape_item['type'] == 'Cancel' :
+                                bid_hit = False
+                        else:
+                                bid_hit = True
+
+                # what, if anything, has happened on the ask LOB?
+                ask_improved = False
+                ask_lifted = False
+                lob_best_ask_p = lob['asks']['best']
+                lob_best_ask_q = None
+                if lob_best_ask_p != None:
+                        # non-empty ask LOB
+                        lob_best_ask_q = lob['asks']['lob'][0][1]
+                        if self.prev_best_ask_p > lob_best_ask_p :
+                                # best ask has improved -- NB doesn't check if the improvement was by self
+                                ask_improved = True
+                        elif trade != None and ((self.prev_best_ask_p < lob_best_ask_p) or ((self.prev_best_ask_p == lob_best_ask_p) and (self.prev_best_ask_q > lob_best_ask_q))):
+                                # trade happened and best ask price has got worse, or stayed same but quantity reduced -- assume previous best ask was lifted
+                                ask_lifted = True
+                elif self.prev_best_ask_p != None:
+                        # the ask LOB is empty now but was not previously: canceled or lifted?
+                        last_tape_item = lob['tape'][-1]
+                        if last_tape_item['type'] == 'Cancel' :
+                                ask_lifted = False
+                        else:
+                                ask_lifted = True
+
+
+                if verbose and (bid_improved or bid_hit or ask_improved or ask_lifted):
+                        print ('B_improved', bid_improved, 'B_hit', bid_hit, 'A_improved', ask_improved, 'A_lifted', ask_lifted)
+
+
+                deal = bid_hit or ask_lifted
+
+                if self.job == 'Ask':
+                        # seller
+                        if deal :
+                                tradeprice = trade['price']
+                                if self.price <= tradeprice:
+                                        # could sell for more? raise margin
+                                        target_price = target_up(tradeprice)
+                                        profit_alter(target_price)
+                                elif ask_lifted and self.active and not willing_to_trade(tradeprice):
+                                        # wouldnt have got this deal, still working order, so reduce margin
+                                        target_price = target_down(tradeprice)
+                                        profit_alter(target_price)
+                        else:
+                                # no deal: aim for a target price higher than best bid
+                                if ask_improved and self.price > lob_best_ask_p:
+                                        if lob_best_bid_p != None:
+                                                target_price = target_up(lob_best_bid_p)
+                                        else:
+                                                target_price = lob['asks']['worst']  # stub quote
+                                        profit_alter(target_price)
+
+                if self.job == 'Bid':
+                        # buyer
+                        if deal :
+                                tradeprice = trade['price']
+                                if self.price >= tradeprice:
+                                        # could buy for less? raise margin (i.e. cut the price)
+                                        target_price = target_down(tradeprice)
+                                        profit_alter(target_price)
+                                elif bid_hit and self.active and not willing_to_trade(tradeprice):
+                                        # wouldnt have got this deal, still working order, so reduce margin
+                                        target_price = target_up(tradeprice)
+                                        profit_alter(target_price)
+                        else:
+                                # no deal: aim for target price lower than best ask
+                                if bid_improved and self.price < lob_best_bid_p:
+                                        if lob_best_ask_p != None:
+                                                target_price = target_down(lob_best_ask_p)
+                                        else:
+                                                target_price = lob['bids']['worst']  # stub quote
+                                        profit_alter(target_price)
+
+
+                # remember the best LOB data ready for next response
+                self.prev_best_bid_p = lob_best_bid_p
+                self.prev_best_bid_q = lob_best_bid_q
+                self.prev_best_ask_p = lob_best_ask_p
+                self.prev_best_ask_q = lob_best_ask_q
+
+
+
+
 ##########################---trader-types have all been defined now--################
 
 
@@ -1371,50 +1602,65 @@ class Trader_AA(Trader):
 # between successive calls, but that does make it inefficient as it has to
 # re-analyse the entire set of traders on each call
 def trade_stats(expid, traders, dumpfile, time, lob):
-    trader_types = {}
-    for t in traders:
-        ttype = traders[t].ttype
-        if ttype in trader_types.keys():
-            t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
-            t_trades = trader_types[ttype]['trades_sum'] + traders[t].n_trades
-            if traders[t].times[2] != 0:
-                t_time1 = trader_types[ttype]['time1'] + traders[t].times[0] / traders[t].times[2]
-                t_time2 = trader_types[ttype]['time2'] + traders[t].times[1] / traders[t].times[2]
-            else:
-                t_time1 = trader_types[ttype]['time1']
-                t_time2 = trader_types[ttype]['time2'] 
-            n = trader_types[ttype]['n'] + 1
+        trader_types = {}
+        n_traders = len(traders)
+        for t in traders:
+                ttype = traders[t].ttype
+                if ttype in trader_types.keys():
+                        t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
+                        n = trader_types[ttype]['n'] + 1
+                else:
+                        t_balance = traders[t].balance
+                        n = 1
+                trader_types[ttype] = {'n':n, 'balance_sum':t_balance}
+
+
+        dumpfile.write('%s, %06d, ' % (expid, time))
+        printing_column = 0
+        for ttype in sorted(list(trader_types.keys())):
+                n = trader_types[ttype]['n']
+                #to keep the traders in the same columns, make data easier
+                if (ttype == 'AA'):
+                        s = trader_types[ttype]['balance_sum']
+                        dumpfile.write('%s, %d, %d, %f, ' % (ttype, s, n, s / float(n)))
+                        printing_column = 1
+
+                if (ttype == 'ASAD'):
+                        if (printing_column == 0):
+                                dumpfile.write('%s, %s, %s, %s, ' % ('', '', '', ''))
+                        s = trader_types[ttype]['balance_sum']
+                        dumpfile.write('%s, %d, %d, %f, ' % (ttype, s, n, s / float(n)))
+                        printing_column = 2
+
+                if (ttype == 'GDX'):
+                        for i in range(2 - printing_column):
+                                dumpfile.write('%s, %s, %s, %s, ' % ('', '', '', ''))
+                        s = trader_types[ttype]['balance_sum']
+                        dumpfile.write('%s, %d, %d, %f, ' % (ttype, s, n, s / float(n)))
+                        printing_column = 3
+
+                if (ttype == 'ZIP'):
+                        for i in range(3 - printing_column):
+                                dumpfile.write('%s, %s, %s, %s, ' % ('', '', '', ''))
+                        s = trader_types[ttype]['balance_sum']
+                        dumpfile.write('%s, %d, %d, %f, ' % (ttype, s, n, s / float(n)))
+                        printing_column = 4
+        while printing_column < 4:
+                dumpfile.write('%s, %s, %s, %s, ' % ('', '', '', ''))
+                printing_column += 1
+
+
+        if lob['bids']['best'] != None :
+                dumpfile.write('%d, ' % (lob['bids']['best']))
         else:
-            t_balance = traders[t].balance
-            if traders[t].times[2] != 0:
-                t_time1 = traders[t].times[0] / traders[t].times[2]
-                t_time2 = traders[t].times[1] / traders[t].times[2]
-            else:
-                t_time1 = 0
-                t_time2 = 0
-            n = 1 
-            t_trades = traders[t].n_trades
-        trader_types[ttype] = {'n':n, 'balance_sum':t_balance, 'trades_sum':t_trades, 'time1':t_time1, 'time2':t_time2}
+                dumpfile.write('N, ')
+        if lob['asks']['best'] != None :
+                dumpfile.write('%d, ' % (lob['asks']['best']))
+        else:
+                dumpfile.write('N, ')
+        dumpfile.write('\n');
 
-    # dumpfile.write('%s, %06d, ' % (expid, time))
-    dumpfile.write('%s, ' % (expid))
-    for ttype in sorted(list(trader_types.keys())):
-        n = trader_types[ttype]['n']
-        s = trader_types[ttype]['balance_sum']
-        t = trader_types[ttype]['trades_sum']
-        time1 = trader_types[ttype]['time1']
-        time2 = trader_types[ttype]['time2']
-        dumpfile.write('%s, %d, %d, %f, %f, %f, %f, ' % (ttype, s, n, s / float(n), t / float(n),  time1 / float(n), time2 / float(n)))
 
-    # if lob['bids']['best'] != None :
-    # 	dumpfile.write('%d, ' % (lob['bids']['best']))
-    # else:
-    # 	dumpfile.write('N, ')
-    # if lob['asks']['best'] != None :
-    # 	dumpfile.write('%d, ' % (lob['asks']['best']))
-    # else:
-    # 	dumpfile.write('N, ')
-    dumpfile.write('\n')
 
 
 
@@ -1424,20 +1670,18 @@ def trade_stats(expid, traders, dumpfile, time, lob):
 def populate_market(traders_spec, traders, shuffle, verbose):
 
         def trader_type(robottype, name):
-                if robottype == 'GVWY':
-                        return Trader_Giveaway('GVWY', name, 0.00, 0)
+                if robottype == 'AA':
+                        return Trader_AA('AA', name, 0.00, 0)
                 elif robottype == 'ZIC':
                         return Trader_ZIC('ZIC', name, 0.00, 0)
-                elif robottype == 'SHVR':
-                        return Trader_Shaver('SHVR', name, 0.00, 0)
+                elif robottype == 'GDX':
+                        return Trader_GDX('GDX', name, 0.00, 0)
                 elif robottype == 'SNPR':
                         return Trader_Sniper('SNPR', name, 0.00, 0)
                 elif robottype == 'ZIP':
                         return Trader_ZIP('ZIP', name, 0.00, 0)
-                elif robottype == 'AA':
-                        return Trader_AA('AA', name, 0.00, 0)
-                elif robottype == 'GDX':
-                        return Trader_GDX('GDX', name, 0.00, 0)
+                elif robottype == 'ASAD':
+                        return Trader_ASAD('ASAD', name, 0.00, 0)
                 else:
                         sys.exit('FATAL: don\'t know robot type %s\n' % robottype)
 
@@ -1536,7 +1780,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                         price = bse_sys_maxprice
                 return price
 
-        
+
 
         def getorderprice(i, sched, n, mode, issuetime):
                 # does the first schedule range include optional dynamic offset function(s)?
@@ -1567,7 +1811,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                 halfstep = round(stepsize / 2.0)
 
                 if mode == 'fixed':
-                        orderprice = pmin + int(i * stepsize) 
+                        orderprice = pmin + int(i * stepsize)
                 elif mode == 'jittered':
                         orderprice = pmin + int(i * stepsize) + random.randint(-halfstep, halfstep)
                 elif mode == 'random':
@@ -1587,7 +1831,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
         def getissuetimes(n_traders, mode, interval, shuffle, fittointerval):
                 interval = float(interval)
                 if n_traders < 1:
-                        sys.exit('FAIL: n_traders < 1 in getissuetimee()')
+                        sys.exit('FAIL: n_traders < 1 in getissuetime()')
                 elif n_traders == 1:
                         tstep = interval
                 else:
@@ -1607,8 +1851,8 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                                 arrtime += interarrivaltime
                         else:
                                 sys.exit('FAIL: unknown time-mode in getissuetimes()')
-                        issuetimes.append(arrtime) 
-                        
+                        issuetimes.append(arrtime)
+
                 # at this point, arrtime is the last arrival time
                 if fittointerval and ((arrtime > interval) or (arrtime < interval)):
                         # generated sum of interarrival times longer than the interval
@@ -1624,7 +1868,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                                 issuetimes[i] = issuetimes[j]
                                 issuetimes[j] = tmp
                 return issuetimes
-        
+
 
         def getschedmode(time, os):
                 got_one = False
@@ -1638,12 +1882,12 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                 if not got_one:
                         sys.exit('Fail: time=%5.2f not within any timezone in os=%s' % (time, os))
                 return (schedrange, mode)
-        
+
 
         n_buyers = trader_stats['n_buyers']
         n_sellers = trader_stats['n_sellers']
 
-        shuffle_times = True
+        shuffle_times = False
 
         cancellations = []
 
@@ -1653,16 +1897,16 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
 
                 # demand side (buyers)
                 issuetimes = getissuetimes(n_buyers, os['timemode'], os['interval'], shuffle_times, True)
-                
+
                 ordertype = 'Bid'
-                (sched, mode) = getschedmode(time, os['dem'])             
+                (sched, mode) = getschedmode(time, os['dem'])
                 for t in range(n_buyers):
                         issuetime = time + issuetimes[t]
                         tname = 'B%02d' % t
                         orderprice = getorderprice(t, sched, n_buyers, mode, issuetime)
                         order = Order(tname, ordertype, orderprice, 1, issuetime, -3.14)
                         new_pending.append(order)
-                        
+
                 # supply side (sellers)
                 issuetimes = getissuetimes(n_sellers, os['timemode'], os['interval'], shuffle_times, True)
                 ordertype = 'Ask'
@@ -1708,9 +1952,9 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 
 
         # timestep set so that can process all traders in one second
-        # NB minimum interarrival time of customer orders may be much less than this!! 
+        # NB minimum interarrival time of customer orders may be much less than this!!
         timestep = 1.0 / float(trader_stats['n_buyers'] + trader_stats['n_sellers'])
-        
+
         duration = float(endtime - starttime)
 
         last_update = -1.0
@@ -1727,7 +1971,10 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 
         if verbose: print('\n%s;  ' % (sess_id))
 
+
         while time < endtime:
+
+
 
                 # how much time left, as a percentage?
                 time_left = (endtime - time) / duration
@@ -1751,15 +1998,11 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 
                 # get a limit-order quote (or None) from a randomly chosen trader
                 tid = list(traders.keys())[random.randint(0, len(traders) - 1)]
-                time1 = timee()
                 order = traders[tid].getorder(time, time_left, exchange.publish_lob(time, lob_verbose))
-                time2 = timee()
-                
+
                 # if verbose: print('Trader Quote: %s' % (order))
 
                 if order != None:
-                        traders[tid].times[0] += time2 - time1
-                        traders[tid].times[2] += 1
                         if order.otype == 'Ask' and order.price < traders[tid].orders[0].price: sys.exit('Bad ask')
                         if order.otype == 'Bid' and order.price > traders[tid].orders[0].price: sys.exit('Bad bid')
                         # send order to exchange
@@ -1778,10 +2021,7 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
                                 # NB respond just updates trader's internal variables
                                 # doesn't alter the LOB, so processing each trader in
                                 # sequence (rather than random/shuffle) isn't a problem
-                                time3 = timee()
                                 traders[t].respond(time, lob, trade, respond_verbose)
-                                time4 = timee()
-                                traders[t].times[1] += time4 - time3
 
                 time = time + timestep
 
@@ -1804,116 +2044,121 @@ if __name__ == "__main__":
 
         # set up parameters for the session
 
-    start_time = 0.0
-    end_time = 600.0
-    duration = end_time - start_time
+        start_time = 0.0
+        end_time = 660.0
+        duration = end_time - start_time
 
 
-    # schedule_offsetfn returns time-dependent offset on schedule prices
-    def schedule_offsetfn(t):
-            pi2 = math.pi * 2
-            c = math.pi * 3000
-            wavelength = t / c
-            gradient = 100 * t / (c / pi2)
-            amplitude = 100 * t / (c / pi2)
-            offset = gradient + amplitude * math.sin(wavelength * t)
-            return int(round(offset, 0))
-    
-    rangeS = (100, 200)
-    supply_schedule = [ {'from':0, 'to':660, 'ranges':[rangeS], 'stepmode':'fixed'}
-                                            ]
-    rangeD = (200, 100)
-    demand_schedule = [ {'from':0, 'to':660, 'ranges':[rangeD], 'stepmode':'fixed'}
-                                            ]
+        # schedule_offsetfn returns time-dependent offset on schedule prices
+        #def schedule_offsetfn(t):
+        #        pi2 = math.pi * 2
+        #        c = math.pi * 3000
+        #        wavelength = t / c
+        #        gradient = 100 * t / (c / pi2)
+        #        amplitude = 100 * t / (c / pi2)
+        #        offset = gradient + amplitude * math.sin(wavelength * t)
+        #        print int(round(offset, 0))
+        #    	return int(round(offset, 0))
 
-    order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-                                    'interval':60, 'timemode':'periodic'}
+        def schedule_offsetfn(t):
+                return int((t % 75)/2)
 
-    buyers_spec = [('ZIP', 10)]
-
-    sellers_spec = buyers_spec
-    traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
-
-    n_trials = 50
-    tdump=open('avg_balance.csv','w')
+        # def schedule_offsetfn(t):
+        #         return int(math.sin(t/30))
+        #
+        # def schedule_offsetfn(t):
+        #         if (t % 100 < 50):
+        #                 return 5
+        #         else:
+        #                 return -5
 
 
-    trial = 1
-    if n_trials > 1:
-            dump_all = False
-    else:
-            dump_all = True
-                    
-    while (trial<(n_trials+1)):
-            trial_id = 'trial%07d' % trial
-            market_session(trial_id, 0, 660, traders_spec, order_sched, tdump, False, False)
-            tdump.flush()
-            trial = trial + 1
-    tdump.close()
+# #        range1 = (10, 190, schedule_offsetfn)
+# #        range2 = (200,300, schedule_offsetfn)
 
-    sys.exit('Done Now')
-
-#     server = int(sys.argv[1])
-#     ratios = []
-#     with open(str(server)+'.csv', newline = '') as csvfile:
-#         reader = csv.reader(csvfile, delimiter=',')
-#         for row in reader:
-#             ratios.append(row)
+# #        supply_schedule = [ {'from':start_time, 'to':duration/3, 'ranges':[range1], 'stepmode':'fixed'},
+# #                            {'from':duration/3, 'to':2*duration/3, 'ranges':[range2], 'stepmode':'fixed'},
+# #                            {'from':2*duration/3, 'to':end_time, 'ranges':[range1], 'stepmode':'fixed'}
+# #                          ]
 
 
-#     # values = ratios[49*server:49*server+49]
 
-#     # if server == 19:
-#     #     values = ratios[49*server:]
+        # range_supply1 = (10,50)
+        # range_supply2 = (25,35)
+        # range_supply3 = (10,50)
+        # range_supply4 = (20,60)
+        # supply_schedule = [ {'from':start_time, 'to':end_time, 'ranges':[range_supply1], 'stepmode':'fixed'},
+                            #{'from':180, 'to':330, 'ranges':[range_supply2], 'stepmode':'fixed'},
+                            #{'from':330, 'to':480, 'ranges':[range_supply3], 'stepmode':'fixed'},
+                            #{'from':330, 'to':end_time, 'ranges':[range_supply3], 'stepmode':'fixed'},
+                        #   ]
 
-#     n_trials_per_ratio = 100
-#     n_schedules_per_ratio = 5
-#     trialnumber = 1
+        # range_demand1 = (10,50)
+        # range_demand2 = (10,50)
+        # range_demand3 = (25,35)
+        # range_demand4 = (20,60)
+        # demand_schedule = [ {'from':start_time, 'to':end_time, 'ranges':[range_demand1], 'stepmode':'fixed'},
+                            #{'from':180, 'to':330, 'ranges':[range_demand2], 'stepmode':'fixed'},
+                            #{'from':330, 'to':480, 'ranges':[range_demand3], 'stepmode':'fixed'},
+                            #{'from':330, 'to':end_time, 'ranges':[range_demand3], 'stepmode':'fixed'},
+                        #   ]
 
-#     for ratio in ratios:
-#         trdr_1_n = int(ratio[0])
-#         trdr_2_n = int(ratio[1])
-#         trdr_3_n = int(ratio[2])
-#         trdr_4_n = int(ratio[3])
-#         trdr_5_n = int(ratio[4])
-#         trdr_6_n = int(ratio[5])
+        # order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+        #                'interval':30, 'timemode':'periodic'}
 
-#         fname = 'Results/bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
+        # buyers_spec = [('AA',2),('SHVR',10),('ZIC',10),('ZIP',10)]
+        # sellers_spec = buyers_spec
+        # traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+        #
+        # # run a sequence of trials, one session per trial
+        #
+        # n_trials = 10
+        # tdump=open('avg_balance.csv','w')
+        # trial = 1
+        # if n_trials > 1:
+        #         dump_all = False
+        # else:
+        #         dump_all = True
+        #
+        # while (trial<(n_trials+1)):
+        #         trial_id = 'trial%04d' % trial
+        #         market_session(trial_id, start_time, end_time, traders_spec, order_sched, tdump, False, True)
+        #         tdump.flush()
+        #         trial = trial + 1
+        # tdump.close()
+        #
+        # sys.exit('Done Now')
 
-#         tdump = open(fname, 'w')
-#         for _ in range(0, n_schedules_per_ratio):
-#             range_max = random.randint(100,200)
-#             range_min = random.randint(1, 100)
-#             rangeS = (range_min, range_max)
-#             supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
-#                                 ]
+        range1 = (100, 150)
+        supply_schedule = [ {'from':start_time, 'to':end_time, 'ranges':[range1], 'stepmode':'fixed'}
+                          ]
 
-#             rangeD = (range_min, range_max)
-#             demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
-#                                 ]
+        demand_schedule = [ {'from':start_time, 'to':end_time, 'ranges':[range1], 'stepmode':'fixed'}
+                          ]
 
-#             order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-#                             'interval':30, 'timemode':'periodic'}
-        
-#             buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
-#                             ('GDX', trdr_3_n), ('AA', trdr_4_n),
-#                             ('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
+        order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+                       'interval':60, 'timemode':'periodic'}
 
-#             sellers_spec = buyers_spec
-#             traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
-            
-#             trial = 1
-#             while trial <= n_trials_per_ratio:
+        buyers_spec = [('AA',10)]
+        sellers_spec = buyers_spec
+        traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+
+        # run a sequence of trials, one session per trial
+
+        n_trials = 50
+        tdump=open('avg_balance.csv','w')
+        trial = 1
+        if n_trials > 1:
+                dump_all = False
+        else:
+                dump_all = True
                 
-#                 # start = timee()
-#                 trial_id = 'trial%07d' % trialnumber
-                
-#                 market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
-#                 # end = timee()
-#                 # print(end-start)
-#                 tdump.flush()
-#                 trial = trial + 1
-#                 trialnumber = trialnumber + 1
-#         tdump.close()
+        while (trial<(n_trials+1)):
+                trial_id = 'trial%04d' % trial
+                market_session(trial_id, start_time, end_time, traders_spec,
+                                                               order_sched, tdump, False, False)
+                tdump.flush()
+                trial = trial + 1
+        tdump.close()
 
-
+        sys.exit('Done Now')

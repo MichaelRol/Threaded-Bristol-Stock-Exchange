@@ -1,3 +1,6 @@
+
+# From original BSE code by Dave Cliff
+
 # an Order/quote has a trader id, a type (buy/sell) price, quantity, timestamp, and unique i.d.
 class Order:
 
