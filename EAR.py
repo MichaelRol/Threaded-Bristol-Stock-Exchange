@@ -74,25 +74,15 @@ for n_trad in range(3, max_traders):
 		ratio.append(round(i/n_trad, 2))
 		diff.append((winners[0]-winners[1])/(winners[0]+winners[1]))
 
-# for t in range(0, len(traders)):
-	# print(traders[t], ratio[t], diff[t])
 
-# points = 500
-# data = np.zeros([points,3])
 x = traders
 y = ratio
 z = diff
 
-# isBad = np.where((x<1) | (x>99) | (y<1) | (y>99), True, False)
 triang = mtri.Triangulation(x, y)
-# mask = np.any(isBad[triang.triangles],axis=1)
-# triang.set_mask(mask)
 
 fig = plt.figure()
 ax = fig.add_subplot(1,1,1, projection='3d')
-
-# ax.triplot(triang, c="#D3D3D3", marker='.', markerfacecolor="#DC143C",
-#     markeredgecolor="black", markersize=10)
 
 ax.plot_trisurf(triang, z, cmap='jet')
 ax.scatter(x,y,z, marker='.', s=10, c="black", alpha=0.5)

@@ -1787,7 +1787,7 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 
 
         # end of an experiment -- dump the tape
-        exchange.tape_dump('bse-transactions.csv', 'a', 'keep')
+        exchange.tape_dump('transactions.csv', 'a', 'keep')
 
 
         # write trade_stats for this experiment NB end-of-session summary only
@@ -1819,101 +1819,101 @@ if __name__ == "__main__":
             offset = gradient + amplitude * math.sin(wavelength * t)
             return int(round(offset, 0))
     
-    rangeS = (100, 200)
-    supply_schedule = [ {'from':0, 'to':660, 'ranges':[rangeS], 'stepmode':'fixed'}
-                                            ]
-    rangeD = (200, 100)
-    demand_schedule = [ {'from':0, 'to':660, 'ranges':[rangeD], 'stepmode':'fixed'}
-                                            ]
+#     rangeS = (100, 200)
+#     supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
+#                                             ]
+#     rangeD = (200, 100)
+#     demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
+#                                             ]
 
-    order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-                                    'interval':60, 'timemode':'periodic'}
+#     order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+#                                     'interval':30, 'timemode':'periodic'}
 
-    buyers_spec = [('ZIP', 10)]
+#     buyers_spec = [('ZIP', 10)]
 
-    sellers_spec = buyers_spec
-    traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+#     sellers_spec = buyers_spec
+#     traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 
-    n_trials = 50
-    tdump=open('avg_balance.csv','w')
+#     n_trials = 50
+#     tdump=open('avg_balance.csv','w')
 
 
-    trial = 1
-    if n_trials > 1:
-            dump_all = False
-    else:
-            dump_all = True
+#     trial = 1
+#     if n_trials > 1:
+#             dump_all = False
+#     else:
+#             dump_all = True
                     
-    while (trial<(n_trials+1)):
-            trial_id = 'trial%07d' % trial
-            market_session(trial_id, 0, 660, traders_spec, order_sched, tdump, False, False)
-            tdump.flush()
-            trial = trial + 1
-    tdump.close()
+#     while (trial<(n_trials+1)):
+#             trial_id = 'trial%07d' % trial
+#             market_session(trial_id, 0, 660, traders_spec, order_sched, tdump, False, False)
+#             tdump.flush()
+#             trial = trial + 1
+#     tdump.close()
 
-    sys.exit('Done Now')
+#     sys.exit('Done Now')
 
-#     server = int(sys.argv[1])
-#     ratios = []
-#     with open(str(server)+'.csv', newline = '') as csvfile:
-#         reader = csv.reader(csvfile, delimiter=',')
-#         for row in reader:
-#             ratios.append(row)
+    server = int(sys.argv[1])
+    ratios = []
+    with open(str(server)+'.csv', newline = '') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',')
+        for row in reader:
+            ratios.append(row)
 
 
-#     # values = ratios[49*server:49*server+49]
+    # values = ratios[49*server:49*server+49]
 
-#     # if server == 19:
-#     #     values = ratios[49*server:]
+    # if server == 19:
+    #     values = ratios[49*server:]
 
-#     n_trials_per_ratio = 100
-#     n_schedules_per_ratio = 5
-#     trialnumber = 1
+    n_trials_per_ratio = 100
+    n_schedules_per_ratio = 10
+    trialnumber = 1
 
-#     for ratio in ratios:
-#         trdr_1_n = int(ratio[0])
-#         trdr_2_n = int(ratio[1])
-#         trdr_3_n = int(ratio[2])
-#         trdr_4_n = int(ratio[3])
-#         trdr_5_n = int(ratio[4])
-#         trdr_6_n = int(ratio[5])
+    for ratio in ratios:
+        trdr_1_n = int(ratio[0])
+        trdr_2_n = int(ratio[1])
+        trdr_3_n = int(ratio[2])
+        trdr_4_n = int(ratio[3])
+        trdr_5_n = int(ratio[4])
+        trdr_6_n = int(ratio[5])
 
-#         fname = 'Results/bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
+        fname = 'Results/bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
 
-#         tdump = open(fname, 'w')
-#         for _ in range(0, n_schedules_per_ratio):
-#             range_max = random.randint(100,200)
-#             range_min = random.randint(1, 100)
-#             rangeS = (range_min, range_max)
-#             supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
-#                                 ]
+        tdump = open(fname, 'w')
+        for _ in range(0, n_schedules_per_ratio):
+            range_max = random.randint(100,200)
+            range_min = random.randint(1, 100)
+            rangeS = (range_min, range_max, schedule_offsetfn)
+            supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
+                                ]
 
-#             rangeD = (range_min, range_max)
-#             demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
-#                                 ]
+            rangeD = (range_min, range_max,schedule_offsetfn)
+            demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
+                                ]
 
-#             order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-#                             'interval':30, 'timemode':'periodic'}
+            order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+                            'interval':30, 'timemode':'periodic'}
         
-#             buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
-#                             ('GDX', trdr_3_n), ('AA', trdr_4_n),
-#                             ('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
+            buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
+                            ('GDX', trdr_3_n), ('AA', trdr_4_n),
+                            ('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
 
-#             sellers_spec = buyers_spec
-#             traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+            sellers_spec = buyers_spec
+            traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
             
-#             trial = 1
-#             while trial <= n_trials_per_ratio:
+            trial = 1
+            while trial <= n_trials_per_ratio:
                 
-#                 # start = timee()
-#                 trial_id = 'trial%07d' % trialnumber
+                # start = timee()
+                trial_id = 'trial%07d' % trialnumber
                 
-#                 market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
-#                 # end = timee()
-#                 # print(end-start)
-#                 tdump.flush()
-#                 trial = trial + 1
-#                 trialnumber = trialnumber + 1
-#         tdump.close()
+                market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
+                # end = timee()
+                # print(end-start)
+                tdump.flush()
+                trial = trial + 1
+                trialnumber = trialnumber + 1
+        tdump.close()
 
 
