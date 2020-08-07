@@ -1,4 +1,5 @@
 import itertools
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.tri as mtri
@@ -32,8 +33,16 @@ max_traders = 20
 
 traders = []
 ratio = []
-diff = []
-for n_trad in range(3, max_traders):
+diff = [0] * 19
+# for n_trad in range(3, max_traders):
+for x in range(0, 100):
+
+	
+	min = random.randint(1, 100)
+	max = random.randint(100,200)
+	p0 = (min + max) / 2
+
+	n_trad = 20
 	limitprices = []
 
 	rangesize = max - min
@@ -67,28 +76,42 @@ for n_trad in range(3, max_traders):
 				winners[0] += 1
 			elif appt_b > appt_a:
 				winners[1] += 1
+			else:
+				winners[1] += 1
+				winners[0] += 1
 
 			
 
-		traders.append(n_trad)
-		ratio.append(round(i/n_trad, 2))
-		diff.append((winners[0]-winners[1])/(winners[0]+winners[1]))
+		# traders.append(n_trad)
+		if x == 0:
+			ratio.append(round(i/n_trad, 2))
+		# print(winners[0],winners[1])
+		diff[i-1] += (winners[0]-winners[1])/(winners[0]+winners[1])
 
-
-x = traders
-y = ratio
-z = diff
-
-triang = mtri.Triangulation(x, y)
-
-fig = plt.figure()
-ax = fig.add_subplot(1,1,1, projection='3d')
-
-ax.plot_trisurf(triang, z, cmap='jet')
-ax.scatter(x,y,z, marker='.', s=10, c="black", alpha=0.5)
-ax.view_init(elev=60, azim=-45)
-
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_zlabel('Z')
+	
+	
+for i in range(0, 19):
+	diff[i] = diff[i]/100
+print(ratio, diff)
+plt.plot(ratio, diff)
 plt.show()
+
+# x = traders	
+# y = ratio
+# z = diff
+
+# print(diff)
+
+# triang = mtri.Triangulation(x, y)
+
+# fig = plt.figure()
+# ax = fig.add_subplot(1,1,1, projection='3d')
+
+# ax.plot_trisurf(triang, z, cmap='jet')
+# ax.scatter(x,y,z, marker='.', s=10, c="black", alpha=0.5)
+# ax.view_init(elev=60, azim=-45)
+
+# ax.set_xlabel('X')
+# ax.set_ylabel('Y')
+# ax.set_zlabel('Z')
+# plt.show()

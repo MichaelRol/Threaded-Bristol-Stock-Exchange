@@ -390,7 +390,7 @@ class Trader:
                 self.profitpertime = 0  # profit per unit time
                 self.n_trades = 0       # how many trades has this trader done?
                 self.lastquote = None   # record of what its last quote was
-                self.times = [0, 0, 0]
+                self.times = [0, 0, 0, 0]
 
 
         def __str__(self):
@@ -599,7 +599,7 @@ class Trader_ZIP(Trader):
                 self.margin_sell = 0.05 + 0.3 * random.random()
                 self.price = None
                 self.limit = None
-                self.times = [0, 0, 0]
+                self.times = [0, 0, 0, 0]
                 # memory of best price & quantity of best bid and ask, on LOB on previous update
                 self.prev_best_bid_p = None
                 self.prev_best_bid_q = None
@@ -805,7 +805,7 @@ class Trader_GDX(Trader):
                 self.lastquote = None
                 self.job = None  # this gets switched to 'Bid' or 'Ask' depending on order-type
                 self.active = False  # gets switched to True while actively working an order
-                self.times = [0, 0, 0]
+                self.times = [0, 0, 0, 0]
 
                 #memory of all bids and asks and accepted bids and asks
                 self.outstanding_bids = []
@@ -1043,7 +1043,7 @@ class Trader_AA(Trader):
                 self.orders = []
                 self.n_quotes = 0
                 self.lastquote = None
-                self.times = [0, 0, 0]
+                self.times = [0, 0, 0, 0]
 
                 self.limit = None
                 self.job = None
@@ -1379,7 +1379,7 @@ def trade_stats(expid, traders, dumpfile, time, lob):
             t_trades = trader_types[ttype]['trades_sum'] + traders[t].n_trades
             if traders[t].times[2] != 0:
                 t_time1 = trader_types[ttype]['time1'] + traders[t].times[0] / traders[t].times[2]
-                t_time2 = trader_types[ttype]['time2'] + traders[t].times[1] / traders[t].times[2]
+                t_time2 = trader_types[ttype]['time2'] + traders[t].times[1] / traders[t].times[3]
             else:
                 t_time1 = trader_types[ttype]['time1']
                 t_time2 = trader_types[ttype]['time2'] 
@@ -1388,7 +1388,7 @@ def trade_stats(expid, traders, dumpfile, time, lob):
             t_balance = traders[t].balance
             if traders[t].times[2] != 0:
                 t_time1 = traders[t].times[0] / traders[t].times[2]
-                t_time2 = traders[t].times[1] / traders[t].times[2]
+                t_time2 = traders[t].times[1] / traders[t].times[3]
             else:
                 t_time1 = 0
                 t_time2 = 0
@@ -1782,6 +1782,7 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
                                 traders[t].respond(time, lob, trade, respond_verbose)
                                 time4 = timee()
                                 traders[t].times[1] += time4 - time3
+                                traders[t].times[3] += 1
 
                 time = time + timestep
 
@@ -1866,8 +1867,8 @@ if __name__ == "__main__":
     # if server == 19:
     #     values = ratios[49*server:]
 
-    n_trials_per_ratio = 100
-    n_schedules_per_ratio = 10
+    n_trials_per_ratio = 5
+    n_schedules_per_ratio = 4
     trialnumber = 1
 
     for ratio in ratios:
@@ -1878,7 +1879,7 @@ if __name__ == "__main__":
         trdr_5_n = int(ratio[4])
         trdr_6_n = int(ratio[5])
 
-        fname = 'Results/bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
+        fname = 'Timing/bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
 
         tdump = open(fname, 'w')
         for _ in range(0, n_schedules_per_ratio):
