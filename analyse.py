@@ -2,8 +2,8 @@ import csv
 
 ratios = []
 
-with open('fullinput.csv', newline = '') as csvfile:
-	rse_output = open('bse-output.csv', 'w')
+with open('1.csv', newline = '') as csvfile:
+	rse_output = open('tbse-output.csv', 'w')
 	reader = csv.reader(csvfile, delimiter=',')
 	for row in reader:
 		name = ['00', '00', '00', '00', '00', '00']
@@ -12,7 +12,7 @@ with open('fullinput.csv', newline = '') as csvfile:
 				name[x] = row[x].zfill(2)
 			else:
 				name[x] = row[x]
-		with open('bse-'+name[0]+'-'+name[1]+'-'+name[2]+'-'+name[3]+'-'+name[4]+'-'+name[5]+'.csv') as testfile:
+		with open('Results/'+name[0]+'-'+name[1]+'-'+name[2]+'-'+name[3]+'-'+name[4]+'-'+name[5]+'.csv') as testfile:
 			newreader = csv.reader(testfile, delimiter=',')
 			# total = [0, 0, 0, 0, 0, 0]
 			# winner = [0, 0, 0, 0, 0, 0]

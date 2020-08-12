@@ -1867,8 +1867,8 @@ if __name__ == "__main__":
     # if server == 19:
     #     values = ratios[49*server:]
 
-    n_trials_per_ratio = 20
-    n_schedules_per_ratio = 5
+    n_trials_per_ratio = 100
+    n_schedules_per_ratio = 10
     trialnumber = 1
 
     for ratio in ratios:
@@ -1879,7 +1879,7 @@ if __name__ == "__main__":
         trdr_5_n = int(ratio[4])
         trdr_6_n = int(ratio[5])
 
-        fname = 'Timing/bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
+        fname = 'Results/bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
 
         tdump = open(fname, 'w')
         for _ in range(0, n_schedules_per_ratio):
