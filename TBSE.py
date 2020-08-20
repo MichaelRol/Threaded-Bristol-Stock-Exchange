@@ -341,117 +341,154 @@ if __name__ == "__main__":
 		offset = gradient + amplitude * math.sin(wavelength * t)
 		return int(round(offset, 0))
 	
-	# rangeS = (100, 200)
-	# supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
-	# 					]
-	# rangeD = (100, 200)
-	# demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
-	# 					]
 
-	# order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-	# 				'interval':60, 'timemode':'periodic'}
+	### This section of code allows for the same order and trader schedules
+	### to be tested n_trails times. Comment out lines 417-488 and make sure
+	### that lines 349-405 are uncommented.
 
-	# buyers_spec = [('GDX', 10)]
+	range_max = random.randint(100,200)
+	range_min = random.randint(1, 100)
+	rangeS = (range_min, range_max,schedule_offsetfn)
 
-	# sellers_spec = buyers_spec
-	# traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+	## Stepmode Options: fixed, random, jittered
+	supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
+						]
 
-	# n_trials = 50
-	# tdump=open('avg_balance.csv','w')
+	range_max = random.randint(100,200)
+	range_min = random.randint(1, 100)
+	rangeD = (range_min, range_max,schedule_offsetfn)
+	demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
+						]
 
+	## Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
+	order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+					'interval':60, 'timemode':'periodic'}
 
-	# trial = 1
-	# if n_trials > 1:
-	# 	dump_all = False
-	# else:
-	# 	dump_all = True
+	## Trader Options: GDX, AA, ZIP, ZIC, SHVR, GVWY
+	buyers_spec = [('GDX', 4),('AA', 4),('ZIP', 4),('SHVR', 4)]
+
+	sellers_spec = buyers_spec
+	traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+
+	n_trials = 50
+	tdump=open('avg_balance.csv','w')
+
+	trader_count = 0
+	for ttype in buyers_spec:
+		trader_count += ttype[1]
+	for ttype in sellers_spec:
+		trader_count += ttype[1]
+
+	trial = 1
+	if n_trials > 1:
+		dump_all = False
+	else:
+		dump_all = True
 			
-	# while (trial<(n_trials+1)):
-	# 	trial_id = 'trial%07d' % trial
-	# 	start_event = threading.Event()
-	# 	try:
-	# 		num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
-	# 						order_sched, tdump, False, start_event, False)
+	while (trial<(n_trials+1)):
+		trial_id = 'trial%07d' % trial
+		start_event = threading.Event()
+		try:
+			num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
+							order_sched, tdump, False, start_event, False)
 			
-	# 		if num_threads != 22:
-	# 			trial = trial - 1
-	# 			start_event.clear()
-	# 			time.sleep(0.5)
-	# 	except:
-	# 		trial = trial - 1
-	# 		start_event.clear()
-	# 		time.sleep(0.5)
-	# 	tdump.flush()
-	# 	trial = trial + 1
-	# tdump.close()
+			if num_threads != trader_count + 2:
+				trial = trial - 1
+				start_event.clear()
+				time.sleep(0.5)
+		except:
+			trial = trial - 1
+			start_event.clear()
+			time.sleep(0.5)
+		tdump.flush()
+		trial = trial + 1
+	tdump.close()
 	
-	server = int(sys.argv[1])
-	ratios = []
-	with open(str(server)+'.csv', newline = '') as csvfile:
-		reader = csv.reader(csvfile, delimiter=',')
-		for row in reader:
-			ratios.append(row)
+	### To use this section of code run TBSE with 'python3 TBSE.py <csv>' 
+	### and have a CSV file with name <csv>.csv with a list of values
+	### representing the number of each trader type present in the 
+	### market you wish to run. The order is:
+	### 				ZIC,ZIP,GDX,AA,GVWY,SHVR
+	### So an example entry would be: 5,5,0,0,5,5
+	### which would be 5 ZIC traders, 5 ZIP traders, 5 Giveaway traders and
+	### 5 Shaver traders. To have different buyer and seller specs modifications
+	### would be needed.
+	### Each line in the CSV file will produce its own output file.
+	### Comment out lines 349-405 and make sure tha lines 417-488 are uncommented.
 
-	n_trials_per_ratio = 100 
-	n_schedules_per_ratio = 10
-	trialnumber = 1
+
+	# server = sys.argv[1]
+	# ratios = []
+	# with open(server+'.csv', newline = '') as csvfile:
+	# 	reader = csv.reader(csvfile, delimiter=',')
+	# 	for row in reader:
+	# 		ratios.append(row)
+
+	# n_trials_per_ratio = 100 
+	# n_schedules_per_ratio = 10
+	# trialnumber = 1
 	
-	for ratio in ratios:
-		trdr_1_n = int(ratio[0])
-		trdr_2_n = int(ratio[1])
-		trdr_3_n = int(ratio[2])
-		trdr_4_n = int(ratio[3])
-		trdr_5_n = int(ratio[4])
-		trdr_6_n = int(ratio[5])
+	# for ratio in ratios:
+	# 	trdr_1_n = int(ratio[0])
+	# 	trdr_2_n = int(ratio[1])
+	# 	trdr_3_n = int(ratio[2])
+	# 	trdr_4_n = int(ratio[3])
+	# 	trdr_5_n = int(ratio[4])
+	# 	trdr_6_n = int(ratio[5])
 
-		fname = 'Results/%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
+	# 	fname = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
 
-		tdump = open(fname, 'w')
-		for _ in range(0, n_schedules_per_ratio):
-			range_max = random.randint(100,200)
-			range_min = random.randint(1, 100)
-			rangeS = (range_min, range_max,schedule_offsetfn)
-			supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
-								]
+	# 	tdump = open(fname, 'w')
+	# 	for _ in range(0, n_schedules_per_ratio):
+	# 		range_max = random.randint(100,200)
+	# 		range_min = random.randint(1, 100)
+	# 		rangeS = (range_min, range_max,schedule_offsetfn)
 
-			# range_max = random.randint(100,200)
-			# range_min = random.randint(1, 100)
-			rangeD = (range_min, range_max,schedule_offsetfn)
-			demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
-								]
 
-			order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-							'interval':30, 'timemode':'periodic'}
+	# ##		Stepmode Options: fixed, random, jittered
+	# 		supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
+	# 							]
+
+	# 		# range_max = random.randint(100,200)
+	# 		# range_min = random.randint(1, 100)
+	# 		rangeD = (range_min, range_max,schedule_offsetfn)
+	# 		demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
+	# 							]
+
+	# ## 		Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
+	# 		order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+	# 						'interval':30, 'timemode':'periodic'}
 		
-			buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
-							('GDX', trdr_3_n), ('AA', trdr_4_n),
-							('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
+	# ##		Do not touch unless you know what you are doing.	
+	# 		buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
+	# 						('GDX', trdr_3_n), ('AA', trdr_4_n),
+	# 						('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
 
-			sellers_spec = buyers_spec
-			traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+	# 		sellers_spec = buyers_spec
+	# 		traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 			
-			trial = 1
-			while trial <= n_trials_per_ratio:
-				trial_id = 'trial%07d' % trialnumber
-				start_event = threading.Event()
-				try:
-					num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
-									order_sched, tdump, False, start_event, False)
+	# 		trial = 1
+	# 		while trial <= n_trials_per_ratio:
+	# 			trial_id = 'trial%07d' % trialnumber
+	# 			start_event = threading.Event()
+	# 			try:
+	# 				num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
+	# 								order_sched, tdump, False, start_event, False)
 					
-					if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n + trdr_5_n + trdr_6_n) * 2 + 2:
-						trial = trial - 1
-						trialnumber = trialnumber - 1
-						start_event.clear()
-						time.sleep(0.5)
-				except:
-					trial = trial - 1
-					trialnumber = trialnumber - 1
-					start_event.clear()
-					time.sleep(0.5)
-				tdump.flush()
-				trial = trial + 1
-				trialnumber = trialnumber + 1
-		tdump.close()
+	# 				if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n + trdr_5_n + trdr_6_n) * 2 + 2:
+	# 					trial = trial - 1
+	# 					trialnumber = trialnumber - 1
+	# 					start_event.clear()
+	# 					time.sleep(0.5)
+	# 			except:
+	# 				trial = trial - 1
+	# 				trialnumber = trialnumber - 1
+	# 				start_event.clear()
+	# 				time.sleep(0.5)
+	# 			tdump.flush()
+	# 			trial = trial + 1
+	# 			trialnumber = trialnumber + 1
+	# 	tdump.close()
 
 
-	sys.exit('Done Now')
+	# sys.exit('Done Now')

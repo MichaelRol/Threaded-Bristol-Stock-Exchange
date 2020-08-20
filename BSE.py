@@ -1820,6 +1820,11 @@ if __name__ == "__main__":
             offset = gradient + amplitude * math.sin(wavelength * t)
             return int(round(offset, 0))
     
+	### This section of code allows for the same order and trader schedules
+	### to be tested n_trails times. Comment out lines 1875-1929 and make sure
+	### that lines 1827-1861 are uncommented.
+
+#     ## Stepmode Options: fixed, random, jittered
 #     rangeS = (100, 200)
 #     supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
 #                                             ]
@@ -1827,6 +1832,7 @@ if __name__ == "__main__":
 #     demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
 #                                             ]
 
+#	  ## Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
 #     order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
 #                                     'interval':30, 'timemode':'periodic'}
 
@@ -1847,12 +1853,24 @@ if __name__ == "__main__":
                     
 #     while (trial<(n_trials+1)):
 #             trial_id = 'trial%07d' % trial
-#             market_session(trial_id, 0, 660, traders_spec, order_sched, tdump, False, False)
+#             market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
 #             tdump.flush()
 #             trial = trial + 1
 #     tdump.close()
 
 #     sys.exit('Done Now')
+
+	### To use this section of code run TBSE with 'python3 TBSE.py <csv>' 
+	### and have a CSV file with name <csv>.csv with a list of values
+	### representing the number of each trader type present in the 
+	### market you wish to run. The order is:
+	### 				ZIC,ZIP,GDX,AA,GVWY,SHVR
+	### So an example entry would be: 5,5,0,0,5,5
+	### which would be 5 ZIC traders, 5 ZIP traders, 5 Giveaway traders and
+	### 5 Shaver traders. To have different buyer and seller specs modifications
+	### would be needed.
+	### Each line in the CSV file will produce its own output file.
+	### Comment out lines 1827-1855 and make sure tha lines 1875-1929 are uncommented.
 
     server = int(sys.argv[1])
     ratios = []
@@ -1860,12 +1878,6 @@ if __name__ == "__main__":
         reader = csv.reader(csvfile, delimiter=',')
         for row in reader:
             ratios.append(row)
-
-
-    # values = ratios[49*server:49*server+49]
-
-    # if server == 19:
-    #     values = ratios[49*server:]
 
     n_trials_per_ratio = 100
     n_schedules_per_ratio = 10
@@ -1879,13 +1891,16 @@ if __name__ == "__main__":
         trdr_5_n = int(ratio[4])
         trdr_6_n = int(ratio[5])
 
-        fname = 'Results/bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
+        fname = 'bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
 
         tdump = open(fname, 'w')
         for _ in range(0, n_schedules_per_ratio):
             range_max = random.randint(100,200)
             range_min = random.randint(1, 100)
             rangeS = (range_min, range_max, schedule_offsetfn)
+
+
+	#		## Stepmode Options: fixed, random, jittered
             supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
                                 ]
 
@@ -1893,6 +1908,7 @@ if __name__ == "__main__":
             demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
                                 ]
 
+	# 		## Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
             order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
                             'interval':30, 'timemode':'periodic'}
         
@@ -1905,13 +1921,8 @@ if __name__ == "__main__":
             
             trial = 1
             while trial <= n_trials_per_ratio:
-                
-                # start = timee()
                 trial_id = 'trial%07d' % trialnumber
-                
                 market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
-                # end = timee()
-                # print(end-start)
                 tdump.flush()
                 trial = trial + 1
                 trialnumber = trialnumber + 1
