@@ -4,7 +4,7 @@ import random
 import threading
 from TBSE_sys_consts import tbse_sys_maxprice
 from TBSE_msg_classes import Order
-# Trader superclass - mostly unhanced from orginal BSE code by Dave Cliff
+# Trader superclass - mostly unchanced from orginal BSE code by Dave Cliff
 # all Traders have a trader id, bank balance, blotter, and list of orders to execute
 class Trader:
 
@@ -39,9 +39,7 @@ class Trader:
         else:
             response = 'Proceed'
         self.orders[order.coid] = order
-        
-        # if len(self.orders) > 3:
-        #     self.orders.pop(min(self.orders.keys()))
+
         if verbose : print('add_order < response=%s' % response)
         return response
 
@@ -81,14 +79,10 @@ class Trader:
         self.n_trades += 1
         self.profitpertime = self.balance/(time - self.birthtime)
 
-        # if self.ttype == "GVWY":
-        #     print("Order price: " + str(order_price) + ", Trade Price: " + str(transactionprice) + ", Profit: " + str(profit))
-
-
         if profit < 0 :
-            # print(profit)
-            # print(trade)
-            # print(order)
+            print(profit)
+            print(trade)
+            print(order)
             print(str(trade['coid']) + " " + str(trade['counter']) + " " + str(order.coid) + " " + str(self.orders[0].coid))
             sys.exit()
 
@@ -288,7 +282,7 @@ class Trader_ZIP(Trader):
             ptrb_abs = self.ca * random.random()  # absolute shift
             ptrb_rel = price * (1.0 + (self.cr * random.random()))  # relative shift
             target = int(round(ptrb_rel + ptrb_abs, 0))
-            # #                        print('TargetUp: %d %d\n' % (price,target))
+
             return (target)
 
         def target_down(price):
@@ -296,7 +290,7 @@ class Trader_ZIP(Trader):
             ptrb_abs = self.ca * random.random()  # absolute shift
             ptrb_rel = price * (1.0 - (self.cr * random.random()))  # relative shift
             target = int(round(ptrb_rel - ptrb_abs, 0))
-            # #                        print('TargetDn: %d %d\n' % (price,target))
+
             return (target)
 
         def willing_to_trade(price):
@@ -326,8 +320,6 @@ class Trader_ZIP(Trader):
 
             # set the price from limit and profit-margin
             self.price = int(round(self.limit * (1.0 + self.margin), 0))
-
-        # #                        print('old=%d diff=%d change=%d price = %d\n' % (oldprice, diff, change, self.price))
 
         # what, if anything, has happened on the bid LOB?
         bid_improved = False

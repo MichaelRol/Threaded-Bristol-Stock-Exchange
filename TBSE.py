@@ -1,3 +1,46 @@
+# -*- coding: utf-8 -*-
+#
+# TBSE: The Threaded Bristol Stock Exchange
+#
+# Version 1.0; Augusts 1st, 2020. 
+#
+# ------------------------
+#
+# MIT Open-Source License:
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+# associated documentation files (the "Software"), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial
+# portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+# LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# ------------------------
+#
+#
+#
+# TBSE is a very simple simulation of automated execution traders
+# operating on a very simple model of a limit order book (LOB) exchange
+# extended from Dave Cliff's Bristol Stock Exchange (BSE). TBSE uses
+# Python multi-threading to allow multiple traders to operate simultaneously
+# which means that the execution time of trading algorithms can affect
+# their performance.
+#
+# major simplifications in this version:
+#       (a) only one financial instrument being traded
+#       (b) traders can only trade contracts of size 1 (will add variable quantities later)
+#       (c) each trader can have max of one order per single orderbook.
+#       (d) traders can replace/overwrite earlier orders, and/or can cancel
+#
+# NB this code has been written to be readable/intelligible, not efficient!
+
 import sys
 import math
 import threading
@@ -240,21 +283,18 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 	cuid = 0 # Customer order id
 
 	while time.time() < (start_time + sess_length):
-		# if (order_q.empty() == False):
-		# 	continue
 		virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 		# distribute customer orders
 		[pending_cust_orders, kills, cuid] = customer_orders(virtual_time, cuid, last_update, traders, trader_stats,
 											order_schedule, pending_cust_orders, orders_verbose)
 		# if any newly-issued customer orders mean quotes on the LOB need to be cancelled, kill them
 		if len(kills) > 0 :
-			# if verbose : print('Kills: %s' % (kills))
+			if verbose : print('Kills: %s' % (kills))
 			for kill in kills :
-				# if verbose : print('lastquote=%s' % traders[kill].lastquote)
+				if verbose : print('lastquote=%s' % traders[kill].lastquote)
 				if traders[kill].lastquote != None :
 					kill_q.put(traders[kill].lastquote)
-					# if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
-					# exchange.del_order(virtual_time, traders[kill].lastquote, verbose)
+					if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
 		time.sleep(0.01)
 
 	# print("QUEUE: " + str(order_q.qsize()))

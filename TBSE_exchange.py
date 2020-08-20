@@ -40,8 +40,7 @@ class Orderbook_half:
 		# returns lob as a dictionary (i.e., unsorted)
 		# also builds anonymized version (just price/quantity, sorted, as a list) for publishing to traders
 		self.lob = {}
-		# orders_cp = dict(self.orders)
-		# for tid in list(orders_cp):
+		
 		for tid in list(self.orders):
 		# 	order = orders_cp.get(tid)
 			order = self.orders.get(tid)
@@ -77,12 +76,12 @@ class Orderbook_half:
 		# or dynamically creates new entry in the dictionary
 		# so, max of one order per trader per list
 		# checks whether length or order list has changed, to distinguish addition/overwrite
-		#print('book_add > %s %s' % (order, self.orders))
+		
 		n_orders = self.n_orders
 		self.orders[order.tid] = order
 		self.n_orders = len(self.orders)
 		self.build_lob()
-		#print('book_add < %s %s' % (order, self.orders))
+		
 		if n_orders != self.n_orders :
 			return('Addition')
 		else:
@@ -94,12 +93,11 @@ class Orderbook_half:
 		# delete order from the dictionary holding the orders
 		# assumes max of one order per trader per list
 		# checks that the Trader ID does actually exist in the dict before deletion
-		# print('book_del %s',self.orders)
+		
 		if self.orders.get(order.tid) != None :
 			del(self.orders[order.tid])
 			self.n_orders = len(self.orders)
 			self.build_lob()
-		# print('book_del %s', self.orders)
 
 
 	def delete_best(self):
@@ -155,8 +153,9 @@ class Exchange(Orderbook):
 		# add a quote/order to the exchange and update all internal records; return unique i.d.
 		order.toid = self.quote_id
 		self.quote_id = order.toid + 1
-		# if verbose : print('QUID: order.quid=%d self.quote.id=%d' % (order.qid, self.quote_id))
-		#tid = order.tid
+		
+		if verbose : print('QUID: order.quid=%d self.quote.id=%d' % (order.qid, self.quote_id))
+		
 		if order.otype == 'Bid':
 			response=self.bids.book_add(order)
 			best_price = self.bids.lob_anon[-1][0]
@@ -172,7 +171,7 @@ class Exchange(Orderbook):
 
 	def del_order(self, time, order, verbose):
 		# delete a trader's quot/order from the exchange, update all internal records
-		#tid = order.tid
+		
 		if order.otype == 'Bid':
 			self.bids.book_del(order)
 			if self.bids.n_orders > 0 :
@@ -218,9 +217,7 @@ class Exchange(Orderbook):
 		if verbose:
 			print('publish_lob: t=%d' % time)
 			print('BID_lob=%s' % public_data['bids']['lob'])
-			# print('best=%s; worst=%s; n=%s ' % (self.bids.best_price, self.bids.worstprice, self.bids.n_orders))
 			print('ASK_lob=%s' % public_data['asks']['lob'])
-			# print('qid=%d' % self.quote_id)
 
 		return public_data
 
