@@ -23,4 +23,4 @@ There is a section of code in TBSE which has been 'commented-out', that, if unco
 The [BSE Guide](https://github.com/davecliff/BristolStockExchange/blob/master/BSEguide1.2e.pdf "BSE Guide") can be used for a guide to configuring market sessions in both BSE and TBSE. 
 
 ## License
-[MIT](https://choosealicense.com/licenses/mit/)
+The code is open-sourced via the [MIT](http://opensource.org/licenses/mit-license.php) Licence: see the LICENSE file for full text. 
