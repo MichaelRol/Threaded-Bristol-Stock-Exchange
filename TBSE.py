@@ -5,6 +5,7 @@
 # Version 1.0; Augusts 1st, 2020. 
 #
 # ------------------------
+# Copyright (c) [2020] [Michael Rollins]
 #
 # MIT Open-Source License:
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
