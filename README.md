@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 
-TBSE is an extension of Dave Cliff's (University of Bristol) [Bristol Stock Exchange (BSE)](https://github.com/davecliff/BristolStockExchange "Bristol Stock Exchange") limit order-book financial exchange simulator. Originally created to for my MEng dissertation it has since been used in several, yet to be published, peer-reviewed conference and journal papers.
+TBSE is an extension of Dave Cliff's (University of Bristol) [Bristol Stock Exchange (BSE)](https://github.com/davecliff/BristolStockExchange "Bristol Stock Exchange") limit order-book financial exchange simulator. Originally created to for my MEng dissertation it has since been used in [Rollins & Cliff (2020)](https://arxiv.org/abs/2009.06905) and several, yet to be published, peer-reviewed conference and journal papers.
 
 TBSE simulates a CDA market where different automated trading algorithms can be compared under a variety of market conditions. The key difference between TBSE and BSE is that TBSE makes use of Python's multi-threading library which allows traders to operate asynchronously of each other and of the exchange, which is a more realistic model of real-world financial exchanges. This allows the execution time of the trading algorithms to have in impact on their performance. 
 
