@@ -2,7 +2,7 @@
 #
 # BSE: The Bristol Stock Exchange
 #
-# This version: Updates to Python3 by Michael Rollins; June 18th 2020
+# This version: Updated to Python3 by Michael Rollins; June 18th 2020
 # Version 1.3; July 21st, 2018.
 # Version 1.2; November 17th, 2012. 
 #
