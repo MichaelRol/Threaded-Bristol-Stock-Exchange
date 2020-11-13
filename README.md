@@ -4,6 +4,7 @@
 [![](https://img.shields.io/github/issues/MichaelRol/Threaded-Bristol-Stock-Exchange)](https://github.com/MichaelRol/Threaded-Bristol-Stock-Exchange/issues)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
+Eddie/Daniel/Bro wox ere
 
 TBSE is an extension of Dave Cliff's (University of Bristol) [Bristol Stock Exchange (BSE)](https://github.com/davecliff/BristolStockExchange "Bristol Stock Exchange") limit order-book financial exchange simulator. Originally created to for my MEng dissertation it has since been used in [Rollins & Cliff (2020)](https://arxiv.org/abs/2009.06905) and several, yet to be published, peer-reviewed conference and journal papers.
 
