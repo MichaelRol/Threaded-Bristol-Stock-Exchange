@@ -42,17 +42,20 @@
 #
 # NB this code has been written to be readable/intelligible, not efficient!
 
-import sys
+import csv
 import math
-import threading
-import time 
 import queue
 import random
-import csv	
-from TBSE_exchange import Exchange
-from TBSE_customer_orders import customer_orders
-from TBSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP, Trader_AA, Trader_GDX
+import sys
+import threading
+import time
+import datetime
 
+from TBSE_customer_orders import customer_orders
+from TBSE_exchange import Exchange
+from TBSE_trader_agents import (Trader_AA, Trader_GDX, Trader_Giveaway,
+								Trader_Shaver, Trader_Sniper, Trader_ZIC,
+								Trader_ZIP)
 
 # trade_stats()
 # dump CSV statistics on exchange data and trader population to file for later analysis
@@ -317,9 +320,7 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 	# write trade_stats for this experiment NB end-of-session summary only
 	if len_threads == len(traders) + 2:
 		trade_stats(sess_id, traders, tdump, virtual_end, exchange.publish_lob(virtual_end, lob_verbose))
-
 	return len_threads
-
 
 #############################
 
@@ -330,6 +331,7 @@ if __name__ == "__main__":
 
 	# set up parameters for the session
 	sess_length = 1 # Length of the session in seconds
+	virtual_start = 0
 	virtual_end = 600 # Number of virtual seconds for each session
 
 	# schedule_offsetfn returns time-dependent offset on schedule prices
@@ -341,6 +343,18 @@ if __name__ == "__main__":
 		amplitude = 100 * t / (c / pi2)
 		offset = gradient + amplitude * math.sin(wavelength * t)
 		return int(round(offset, 0))
+
+	def real_world_schedule_offsetfn(time, params):
+		end_time = float(params[0])
+		offset_events = params[1]
+		# this is quite inefficient: on every call it walks the event-list
+		# come back and make it better
+		percent_elapsed = time/end_time
+		for event in offset_events:
+			offset = event[1]
+			if percent_elapsed < event[0]: break
+		return offset
+
 	
 
 	### This section of code allows for the same order and trader schedules
@@ -493,3 +507,109 @@ if __name__ == "__main__":
 
 
 	# sys.exit('Done Now')
+
+
+	# server = sys.argv[1]
+	# ratios = []
+	# with open(server+'.csv', newline = '') as csvfile:
+	# 	reader = csv.reader(csvfile, delimiter=',')
+	# 	for row in reader:
+	# 		ratios.append(row)
+
+	# n_trials_per_ratio = 100 
+	# n_schedules_per_ratio = 10
+	# trialnumber = 1
+	
+	# for ratio in ratios:
+	# 	trdr_1_n = int(ratio[0])
+	# 	trdr_2_n = int(ratio[1])
+	# 	trdr_3_n = int(ratio[2])
+	# 	trdr_4_n = int(ratio[3])
+	# 	trdr_5_n = int(ratio[4])
+	# 	trdr_6_n = int(ratio[5])
+
+	# 	fname = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
+
+	# 	tdump = open(fname, 'w')
+	# 	for _ in range(0, n_schedules_per_ratio):
+	# 		# read in a real-world-data data-file for the SDS offset function
+	# 		# having this here means it's only read in once
+	# 		# this is all quite skanky, just to get it up and running
+	# 		# assumes data file is all for one date, sorted in time order, in correct format, etc. etc.
+	# 		rwd_csv = csv.reader(open('RWD/ibm-1m-sample170831.csv', 'r'))
+	# 		scale_factor = 80
+	# 		# first pass: get time & price events, find out how long session is, get min & max price
+	# 		minprice = None
+	# 		maxprice = None
+	# 		firsttimeobj = None
+	# 		priceevents=[]
+	# 		for line in rwd_csv:
+	# 			print(line)
+	# 			time_str = line[1]
+	# 			if firsttimeobj == None: firsttimeobj = datetime.datetime.strptime(time_str, '%H:%M:%S')
+	# 			timeobj=datetime.datetime.strptime(time_str, '%H:%M:%S')
+	# 			price = float(line[2])
+	# 			if minprice == None or price < minprice: minprice = price
+	# 			if maxprice == None or price > maxprice: maxprice = price
+	# 			timesincestart = (timeobj - firsttimeobj).total_seconds()
+	# 			priceevents.append([timesincestart, price])
+	# 		# second pass: normalise times to fractions of entire time-series duration
+	# 		#              & normalise price range
+	# 		pricerange = maxprice - minprice
+	# 		endtime = float(timesincestart)
+	# 		offsetfn_eventlist=[]
+	# 		for event in priceevents:
+	# 			# normalise price
+	# 			normld_price = (event[1]-minprice)/pricerange
+	# 			# clip
+	# 			normld_price = min(normld_price,1.0)
+	# 			normld_price = max(0.0,normld_price)
+	# 			# scale & convert to integer cents
+	# 			price = int(round(normld_price * scale_factor))
+	# 			normld_event = [event[0]/endtime, price]
+	# 			offsetfn_eventlist.append(normld_event)
+
+	# 		range_max = random.randint(100,200)
+	# 		range_min = random.randint(1, 100)
+	# 		suprange = (range_min, range_max, [real_world_schedule_offsetfn, [offsetfn_eventlist]])
+	# 		supply_schedule = [{'from': virtual_start, 'to': virtual_end, 'ranges': [suprange], 'stepmode': 'fixed'}
+	# 						]
+	# 		range_max = random.randint(100,200)
+	# 		range_min = random.randint(1, 100)
+	# 		demrange = (range_min, range_max, [real_world_schedule_offsetfn, [offsetfn_eventlist]])
+	# 		demand_schedule = [{'from': virtual_start, 'to': virtual_end, 'ranges': [demrange], 'stepmode': 'fixed'}
+	# 						]
+	# 		order_sched = {'sup': supply_schedule, 'dem': demand_schedule,
+	# 					'interval': 30, 'timemode': 'drip-poisson'}
+
+	# 		##		Do not touch unless you know what you are doing.	
+	# 		buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
+	# 						('GDX', trdr_3_n), ('AA', trdr_4_n),
+	# 						('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
+
+	# 		sellers_spec = buyers_spec
+	# 		traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+			
+	# 		trial = 1
+	# 		while trial <= n_trials_per_ratio:
+	# 			trial_id = 'trial%07d' % trialnumber
+	# 			start_event = threading.Event()
+	# 			try:
+	# 				num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
+	# 								order_sched, tdump, False, start_event, False)
+					
+	# 				if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n + trdr_5_n + trdr_6_n) * 2 + 2:
+	# 					trial = trial - 1
+	# 					trialnumber = trialnumber - 1
+	# 					start_event.clear()
+	# 					time.sleep(0.5)
+	# 			except Exception as e:
+	# 				print(e)
+	# 				trial = trial - 1
+	# 				trialnumber = trialnumber - 1
+	# 				start_event.clear()
+	# 				time.sleep(0.5)
+	# 			tdump.flush()
+	# 			trial = trial + 1
+	# 			trialnumber = trialnumber + 1
+	# 	tdump.close()
