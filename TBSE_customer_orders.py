@@ -7,7 +7,6 @@ from TBSE_sys_consts import tbse_sys_maxprice, tbse_sys_minprice
 # Mostly unaltered from original BSE code by Dave Cliff
 def customer_orders(time, coid, last_update, traders, trader_stats, os, pending, verbose):
 
-
         def sysmin_check(price):
             if price < tbse_sys_minprice:
                 print('WARNING: price < bse_sys_min -- clipped')
