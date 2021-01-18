@@ -347,20 +347,27 @@ if __name__ == "__main__":
 		offset = gradient + amplitude * math.sin(wavelength * t)
 		return int(round(offset, 0))
 	
+	# Edit these values if you are using the hardcoded schedule.
+	numZIC  = 1
+	numZIP  = 0
+	numGDX  = 1
+	numAA   = 0
+	numGVWY = 1
+	numSHVR = 0
+
 	numOfArgs = len(sys.argv)
 	if numOfArgs == 1:
 		hardcoded = True
-		# Edit these values if you are using the hardcoded schedule.
-		buyers_spec = [('ZIC', 4), ('ZIP', 4),
-						('GDX', 4), ('AA', 4),
-						('GVWY', 0), ('SHVR', 0)]
 	elif numOfArgs == 2:
 		useCSV = True
 	elif numOfArgs == 7:
 		useCommandLine = True
-		buyers_spec = [('ZIC', int(sys.argv[1])), ('ZIP', int(sys.argv[2])),
-						('GDX', int(sys.argv[3])), ('AA', int(sys.argv[4])),
-						('GVWY', int(sys.argv[5])), ('SHVR', int(sys.argv[6]))]
+		numZIC  = int(sys.argv[1])
+		numZIP  = int(sys.argv[2])
+		numGDX  = int(sys.argv[3])
+		numAA   = int(sys.argv[4])
+		numGVWY = int(sys.argv[5])
+		numSHVR = int(sys.argv[6])
 	else:
 		print("Invalid input arguements.")
 		print("Options for running TBSE:")
@@ -391,17 +398,25 @@ if __name__ == "__main__":
 		order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
 						'interval':60, 'timemode':'periodic'}
 
+		buyers_spec = [('ZIC', numZIC), ('ZIP', numZIP),
+						('GDX', numGDX), ('AA', numAA),
+						('GVWY', numGVWY), ('SHVR', numSHVR)]
 		sellers_spec = buyers_spec
 		traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 
 		n_trials = 50
-		tdump=open('avg_balance.csv','w')
+	
+		fname = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (numZIC, numZIP, numGDX, numAA, numGVWY, numSHVR)
+		tdump = open(fname, 'w')
 
 		trader_count = 0
 		for ttype in buyers_spec:
 			trader_count += ttype[1]
 		for ttype in sellers_spec:
 			trader_count += ttype[1]
+
+		if trader_count > 40:
+			print("WARNING: Too many traders can cause unstable behaviour.")
 
 		trial = 1
 		if n_trials > 1:
@@ -439,29 +454,34 @@ if __name__ == "__main__":
 	### would be needed.
 
 	elif useCSV:
-
 		server = sys.argv[1]
 		ratios = []
-		with open(server+'.csv', newline = '') as csvfile:
-			reader = csv.reader(csvfile, delimiter=',')
-			for row in reader:
-				ratios.append(row)
-
+		try:
+			with open(server, newline = '') as csvfile:
+				reader = csv.reader(csvfile, delimiter=',')
+				for row in reader:
+					ratios.append(row)
+		except FileNotFoundError:
+			print("ERROR: File " + server + " not found.")
+			sys.exit()
+		except:
+			print("ERROR: Unknown file reader error.")
+			sys.exit()
 		n_trials_per_ratio = 100
 		n_schedules_per_ratio = 10
 		trialnumber = 1
 		
 		for ratio in ratios:
-			trdr_1_n = int(ratio[0])
-			trdr_2_n = int(ratio[1])
-			trdr_3_n = int(ratio[2])
-			trdr_4_n = int(ratio[3])
-			trdr_5_n = int(ratio[4])
-			trdr_6_n = int(ratio[5])
+			numZIC  = int(ratio[0])
+			numZIP  = int(ratio[1])
+			numGDX  = int(ratio[2])
+			numAA   = int(ratio[3])
+			numGVWY = int(ratio[4])
+			numSHVR = int(ratio[5])
 
-			fname = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
-
+			fname = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (numZIC, numZIP, numGDX, numAA, numGVWY, numSHVR)
 			tdump = open(fname, 'w')
+
 			for _ in range(0, n_schedules_per_ratio):
 				range_max = random.randint(100,200)
 				range_min = random.randint(1, 100)
@@ -469,26 +489,33 @@ if __name__ == "__main__":
 
 
 		##		Stepmode Options: fixed, random, jittered
-				supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
-									]
+				supply_schedule = [{'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}]
 
 				# range_max = random.randint(100,200)
 				# range_min = random.randint(1, 100)
 				rangeD = (range_min, range_max,schedule_offsetfn)
-				demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
-									]
+				demand_schedule = [{'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}]
 
 		## 		Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
 				order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
 								'interval':30, 'timemode':'periodic'}
 			
 		##		Do not touch unless you know what you are doing.	
-				buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
-								('GDX', trdr_3_n), ('AA', trdr_4_n),
-								('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
+				buyers_spec = [('ZIC', numZIC), ('ZIP', numZIP),
+								('GDX', numGDX), ('AA', numAA),
+								('GVWY', numGVWY), ('SHVR', numSHVR)]
 
 				sellers_spec = buyers_spec
 				traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+
+				trader_count = 0
+				for ttype in buyers_spec:
+					trader_count += ttype[1]
+				for ttype in sellers_spec:
+					trader_count += ttype[1]
+
+				if trader_count > 40:
+					print("WARNING: Too many traders can cause unstable behaviour.")
 				
 				trial = 1
 				while trial <= n_trials_per_ratio:
@@ -498,7 +525,7 @@ if __name__ == "__main__":
 						num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
 										order_sched, tdump, False, start_event, False)
 						
-						if num_threads != (trdr_1_n + trdr_2_n + trdr_3_n + trdr_4_n + trdr_5_n + trdr_6_n) * 2 + 2:
+						if num_threads != trader_count + 2:
 							trial = trial - 1
 							trialnumber = trialnumber - 1
 							start_event.clear()
@@ -512,6 +539,5 @@ if __name__ == "__main__":
 					trial = trial + 1
 					trialnumber = trialnumber + 1
 			tdump.close()
-
 
 		sys.exit('Done Now')
