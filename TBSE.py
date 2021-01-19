@@ -45,10 +45,10 @@
 import sys
 import math
 import threading
-import time 
+import time
 import queue
 import random
-import csv	
+import csv
 from TBSE_exchange import Exchange
 from TBSE_customer_orders import customer_orders
 from TBSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP, Trader_AA, Trader_GDX
@@ -362,12 +362,23 @@ if __name__ == "__main__":
 		useCSV = True
 	elif numOfArgs == 7:
 		useCommandLine = True
-		numZIC  = int(sys.argv[1])
-		numZIP  = int(sys.argv[2])
-		numGDX  = int(sys.argv[3])
-		numAA   = int(sys.argv[4])
-		numGVWY = int(sys.argv[5])
-		numSHVR = int(sys.argv[6])
+		try:
+			numZIC  = int(sys.argv[1])
+			numZIP  = int(sys.argv[2])
+			numGDX  = int(sys.argv[3])
+			numAA   = int(sys.argv[4])
+			numGVWY = int(sys.argv[5])
+			numSHVR = int(sys.argv[6])
+		except ValueError:
+			print("ERROR: Invalid trader schedule. Please enter six integer values.")
+			sys.exit()
+		except:
+			print("ERROR: Unknown input error.")
+			sys.exit()
+
+		if numZIC < 0 or numZIP < 0 or numGDX < 0 or numAA < 0 or numGVWY < 0 or numSHVR < 0:
+			print("ERROR: Invalid trader schedule. All input integers should be positive.")
+			sys.exit()
 	else:
 		print("Invalid input arguements.")
 		print("Options for running TBSE:")
@@ -472,12 +483,23 @@ if __name__ == "__main__":
 		trialnumber = 1
 		
 		for ratio in ratios:
-			numZIC  = int(ratio[0])
-			numZIP  = int(ratio[1])
-			numGDX  = int(ratio[2])
-			numAA   = int(ratio[3])
-			numGVWY = int(ratio[4])
-			numSHVR = int(ratio[5])
+			try:
+				numZIC  = int(ratio[0])
+				numZIP  = int(ratio[1])
+				numGDX  = int(ratio[2])
+				numAA   = int(ratio[3])
+				numGVWY = int(ratio[4])
+				numSHVR = int(ratio[5])
+			except ValueError:
+				print("ERROR: Invalid trader schedule. Please enter six integer values. Skipping this trader schedule.")
+				continue
+			except:
+				print("ERROR: Unknown input error. Skipping this trader schedule.")
+				continue
+
+			if numZIC < 0 or numZIP < 0 or numGDX < 0 or numAA < 0 or numGVWY < 0 or numSHVR < 0:
+				print("ERROR: Invalid trader schedule. All input integers should be positive. Skipping this trader schedule.")
+				continue
 
 			fname = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (numZIC, numZIP, numGDX, numAA, numGVWY, numSHVR)
 			tdump = open(fname, 'w')
