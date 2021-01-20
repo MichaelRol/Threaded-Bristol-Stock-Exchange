@@ -49,9 +49,11 @@ import time
 import queue
 import random
 import csv
+import config
 from TBSE_exchange import Exchange
 from TBSE_customer_orders import customer_orders
-from TBSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, Trader_ZIC, Trader_ZIP, Trader_AA, Trader_GDX
+from TBSE_trader_agents import Trader_Giveaway, Trader_Shaver, Trader_Sniper, \
+								Trader_ZIC, Trader_ZIP, Trader_AA, Trader_GDX
 
 
 # trade_stats()
@@ -328,12 +330,8 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 
 if __name__ == "__main__":
 
-	# set up parameters for the session
-	sess_length = 1 # Length of the session in seconds
-	virtual_end = 600 # Number of virtual seconds for each session
-
 	# Input configuartion
-	hardcoded = False
+	fromConfig = False
 	useCSV = False
 	useCommandLine = False
 
@@ -347,17 +345,16 @@ if __name__ == "__main__":
 		offset = gradient + amplitude * math.sin(wavelength * t)
 		return int(round(offset, 0))
 	
-	# Edit these values if you are using the hardcoded schedule.
-	numZIC  = 1
-	numZIP  = 0
-	numGDX  = 1
-	numAA   = 0
-	numGVWY = 1
-	numSHVR = 0
+	numZIC  = config.numZIC
+	numZIP  = config.numZIP
+	numGDX  = config.numGDX
+	numAA   = config.numAA
+	numGVWY = config.numGVWY
+	numSHVR = config.numSHVR
 
 	numOfArgs = len(sys.argv)
 	if numOfArgs == 1:
-		hardcoded = True
+		fromConfig = True
 	elif numOfArgs == 2:
 		useCSV = True
 	elif numOfArgs == 7:
@@ -375,39 +372,37 @@ if __name__ == "__main__":
 		except:
 			print("ERROR: Unknown input error.")
 			sys.exit()
-
-		if numZIC < 0 or numZIP < 0 or numGDX < 0 or numAA < 0 or numGVWY < 0 or numSHVR < 0:
-			print("ERROR: Invalid trader schedule. All input integers should be positive.")
-			sys.exit()
 	else:
 		print("Invalid input arguements.")
 		print("Options for running TBSE:")
-		print("	$ python3 TBSE.py  ---  Run using hardcoded trader schedule.")
+		print("	$ python3 TBSE.py  ---  Run using trader schedule from config.")
 		print("	$ python3 TBSE.py <string>.csv  ---  Enter name of csv file describing a series of trader schedules.")
 		print("	$ python3 TBSE.py <int> <int> <int> <int> <int> <int>  ---  Enter 6 integer values representing trader schedule.")
+		sys.exit()
+
+	if numZIC < 0 or numZIP < 0 or numGDX < 0 or numAA < 0 or numGVWY < 0 or numSHVR < 0:
+		print("ERROR: Invalid trader schedule. All input integers should be positive.")
 		sys.exit()
 
 	### This section of code allows for the same order and trader schedules
 	### to be tested n_trails times.
 
-	if hardcoded or useCommandLine:
+	if fromConfig or useCommandLine:
 		range_max = random.randint(100,200)
 		range_min = random.randint(1, 100)
 		rangeS = (range_min, range_max,schedule_offsetfn)
 
 		## Stepmode Options: fixed, random, jittered
-		supply_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}
-							]
+		supply_schedule = [ {'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeS], 'stepmode':'fixed'}]
 
 		range_max = random.randint(100,200)
 		range_min = random.randint(1, 100)
 		rangeD = (range_min, range_max,schedule_offsetfn)
-		demand_schedule = [ {'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}
-							]
+		demand_schedule = [ {'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeD], 'stepmode':'fixed'}]
 
 		## Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
 		order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-						'interval':60, 'timemode':'periodic'}
+						'interval':config.interval, 'timemode':config.timemode}
 
 		buyers_spec = [('ZIC', numZIC), ('ZIP', numZIP),
 						('GDX', numGDX), ('AA', numAA),
@@ -439,8 +434,8 @@ if __name__ == "__main__":
 			trial_id = 'trial%07d' % trial
 			start_event = threading.Event()
 			try:
-				num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
-								order_sched, tdump, False, start_event, False)
+				num_threads = market_session(trial_id, config.sessionLength, config.virtualSessionLength, traders_spec,
+								order_sched, tdump, False, start_event, config.verbose)
 				
 				if num_threads != trader_count + 2:
 					trial = trial - 1
@@ -511,16 +506,16 @@ if __name__ == "__main__":
 
 
 		##		Stepmode Options: fixed, random, jittered
-				supply_schedule = [{'from':0, 'to':virtual_end, 'ranges':[rangeS], 'stepmode':'fixed'}]
+				supply_schedule = [{'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeS], 'stepmode':config.stepmode}]
 
 				# range_max = random.randint(100,200)
 				# range_min = random.randint(1, 100)
 				rangeD = (range_min, range_max,schedule_offsetfn)
-				demand_schedule = [{'from':0, 'to':virtual_end, 'ranges':[rangeD], 'stepmode':'fixed'}]
+				demand_schedule = [{'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeD], 'stepmode':config.stepmode}]
 
 		## 		Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
 				order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-								'interval':30, 'timemode':'periodic'}
+								'interval':config.interval, 'timemode':config.timemode}
 			
 		##		Do not touch unless you know what you are doing.	
 				buyers_spec = [('ZIC', numZIC), ('ZIP', numZIP),
@@ -544,8 +539,8 @@ if __name__ == "__main__":
 					trial_id = 'trial%07d' % trialnumber
 					start_event = threading.Event()
 					try:
-						num_threads = market_session(trial_id, sess_length, virtual_end, traders_spec,
-										order_sched, tdump, False, start_event, False)
+						num_threads = market_session(trial_id, config.sessionLength, config.virtualSessionLength, traders_spec,
+										order_sched, tdump, False, start_event, config.verbose)
 						
 						if num_threads != trader_count + 2:
 							trial = trial - 1

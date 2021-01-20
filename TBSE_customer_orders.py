@@ -52,7 +52,7 @@ def customer_orders(time, coid, last_update, traders, trader_stats, os, pending,
             halfstep = round(stepsize / 2.0)
 
             if mode == 'fixed':
-                orderprice = pmin + int(i * stepsize) 
+                orderprice = pmin + int(i * stepsize)
             elif mode == 'jittered':
                 orderprice = pmin + int(i * stepsize) + random.randint(-halfstep, halfstep)
             elif mode == 'random':

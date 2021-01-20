@@ -4,7 +4,7 @@
 #
 # This version: Updated to Python3 by Michael Rollins; June 18th 2020
 # Version 1.3; July 21st, 2018.
-# Version 1.2; November 17th, 2012. 
+# Version 1.2; November 17th, 2012.
 #
 # Copyright (c) 2012-2018, Dave Cliff
 #
@@ -29,6 +29,7 @@
 #
 # ------------------------
 #
+# pylint: skip-file
 #
 #
 # BSE is a very simple simulation of automated execution traders
