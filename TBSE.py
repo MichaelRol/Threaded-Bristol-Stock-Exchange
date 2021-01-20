@@ -385,22 +385,29 @@ if __name__ == "__main__":
 		sys.exit()
 
 	### This section of code allows for the same order and trader schedules
-	### to be tested n_trails times.
+	### to be tested config.numTrials times.
 
 	if fromConfig or useCommandLine:
-		range_max = random.randint(100,200)
-		range_min = random.randint(1, 100)
-		rangeS = (range_min, range_max,schedule_offsetfn)
+		range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
+		range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
+		if config.useOffset:
+			rangeS = (range_min, range_max, schedule_offsetfn)
+		else:
+			rangeS = (range_min, range_max)
 
-		## Stepmode Options: fixed, random, jittered
 		supply_schedule = [ {'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeS], 'stepmode':'fixed'}]
 
-		range_max = random.randint(100,200)
-		range_min = random.randint(1, 100)
-		rangeD = (range_min, range_max,schedule_offsetfn)
+		if not config.symmetric:
+			range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
+			range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
+
+		if config.useOffset:
+			rangeD = (range_min, range_max, schedule_offsetfn)
+		else:
+			rangeD = (range_min, range_max)
+		print(rangeD)
 		demand_schedule = [ {'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeD], 'stepmode':'fixed'}]
 
-		## Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
 		order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
 						'interval':config.interval, 'timemode':config.timemode}
 
@@ -410,8 +417,6 @@ if __name__ == "__main__":
 		sellers_spec = buyers_spec
 		traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 
-		n_trials = 50
-	
 		fname = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (numZIC, numZIP, numGDX, numAA, numGVWY, numSHVR)
 		tdump = open(fname, 'w')
 
@@ -425,12 +430,12 @@ if __name__ == "__main__":
 			print("WARNING: Too many traders can cause unstable behaviour.")
 
 		trial = 1
-		if n_trials > 1:
+		if config.numTrials > 1:
 			dump_all = False
 		else:
 			dump_all = True
 				
-		while (trial<(n_trials+1)):
+		while (trial<(config.numTrials+1)):
 			trial_id = 'trial%07d' % trial
 			start_event = threading.Event()
 			try:
@@ -473,10 +478,8 @@ if __name__ == "__main__":
 		except:
 			print("ERROR: Unknown file reader error.")
 			sys.exit()
-		n_trials_per_ratio = 100
-		n_schedules_per_ratio = 10
+			
 		trialnumber = 1
-		
 		for ratio in ratios:
 			try:
 				numZIC  = int(ratio[0])
@@ -499,25 +502,29 @@ if __name__ == "__main__":
 			fname = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (numZIC, numZIP, numGDX, numAA, numGVWY, numSHVR)
 			tdump = open(fname, 'w')
 
-			for _ in range(0, n_schedules_per_ratio):
-				range_max = random.randint(100,200)
-				range_min = random.randint(1, 100)
-				rangeS = (range_min, range_max,schedule_offsetfn)
+			for _ in range(0, config.numSchedulesPerRatio):
+				range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
+				range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
+				if config.useOffset:
+					rangeS = (range_min, range_max, schedule_offsetfn)
+				else:
+					rangeS = (range_min, range_max)
 
-
-		##		Stepmode Options: fixed, random, jittered
 				supply_schedule = [{'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeS], 'stepmode':config.stepmode}]
-
-				# range_max = random.randint(100,200)
-				# range_min = random.randint(1, 100)
-				rangeD = (range_min, range_max,schedule_offsetfn)
+				
+				if not config.symmetric:
+					range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
+					range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
+				if config.useOffset:
+					rangeD = (range_min, range_max, schedule_offsetfn)
+				else:
+					rangeD = (range_min, range_max)
+				print(rangeD)
 				demand_schedule = [{'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeD], 'stepmode':config.stepmode}]
 
-		## 		Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
 				order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
 								'interval':config.interval, 'timemode':config.timemode}
 			
-		##		Do not touch unless you know what you are doing.	
 				buyers_spec = [('ZIC', numZIC), ('ZIP', numZIP),
 								('GDX', numGDX), ('AA', numAA),
 								('GVWY', numGVWY), ('SHVR', numSHVR)]
@@ -535,7 +542,7 @@ if __name__ == "__main__":
 					print("WARNING: Too many traders can cause unstable behaviour.")
 				
 				trial = 1
-				while trial <= n_trials_per_ratio:
+				while trial <= config.numTrialsPerSchedule:
 					trial_id = 'trial%07d' % trialnumber
 					start_event = threading.Event()
 					try:
