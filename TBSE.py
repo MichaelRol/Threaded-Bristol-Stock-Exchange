@@ -330,6 +330,9 @@ def market_session(sess_id, sess_length, virtual_end, trader_spec, order_schedul
 
 if __name__ == "__main__":
 
+	if not config.parse_config():
+		sys.exit()
+
 	# Input configuartion
 	fromConfig = False
 	useCSV = False
@@ -405,7 +408,7 @@ if __name__ == "__main__":
 			rangeD = (range_min, range_max, schedule_offsetfn)
 		else:
 			rangeD = (range_min, range_max)
-		print(rangeD)
+
 		demand_schedule = [ {'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeD], 'stepmode':'fixed'}]
 
 		order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
