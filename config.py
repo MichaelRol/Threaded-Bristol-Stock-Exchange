@@ -6,6 +6,10 @@ sessionLength = 1   # Length of session in seconds.
 virtualSessionLength = 600  # Number of virtual timesteps per sessionLength.
 verbose = False     # Adds additional output for debugging.
 
+# BSE ONLY
+start_time = 0.0
+end_time = 600.0
+
 # Trader Schedule
 # Define number of each algorithm used one side of exchange (buyers or sellers).
 # Same values will be used to define other side of exchange (buyers = sellers).
@@ -48,7 +52,7 @@ demand = dict(              # Define range of values from which demand orders ca
 # For single schedule: using config trader schedule, or command-line trader schedule.
 numTrials = 50
 
-# For multiple schedules: using input csv file.
+# For multiple schedules: using input csv file. 
 numSchedulesPerRatio = 2     # Number of schedules per ratio of traders in csv file.
 numTrialsPerSchedule = 5     # Number of trails per schedule.
 symmetric = True             # Should range of supply = range of demand?
@@ -64,6 +68,12 @@ def parse_config():
         valid = False
     if not isinstance(verbose, bool):
         print("CONFIG ERROR: verbose must be bool.")
+        valid = False
+    if not isinstance(start_time, float):
+        print("CONFIG ERROR: start_time must be a float.")
+        valid = False
+    if not isinstance(end_time, float):
+        print("CONFIG ERROR: end_time must be a float.")
         valid = False
     if not (isinstance(numZIC, int) and isinstance(numAA, int) and isinstance(numGDX, int) and
             isinstance(numGVWY, int) and isinstance(numSHVR, int) and isinstance(numZIP, int)):
@@ -103,6 +113,12 @@ def parse_config():
 
     if sessionLength <= 0 or virtualSessionLength <= 0:
         print("CONFIG ERROR: Session lengths must be greater than 0.")
+        valid = False
+    if start_time < 0:
+        print("CONFIG ERROR: start_time must be greater than or equal to 0.")
+        valid = False
+    if end_time <= start_time:
+        print("CONFIG ERROR: end_time must be greater than start_time")
         valid = False
     if numAA < 0 or numGDX < 0 or numGVWY < 0 or numSHVR < 0 or numZIC < 0 or numZIP < 0:
         print("CONFIG ERROR: All trader schedule values must be greater than or equal to 0.")

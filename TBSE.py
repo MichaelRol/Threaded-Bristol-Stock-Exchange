@@ -2,7 +2,7 @@
 #
 # TBSE: The Threaded Bristol Stock Exchange
 #
-# Version 1.0; Augusts 1st, 2020. 
+# Version 1.0; Augusts 1st, 2020.
 #
 # ------------------------
 # Copyright (c) 2020, Michael Rollins
@@ -393,12 +393,13 @@ if __name__ == "__main__":
 	if fromConfig or useCommandLine:
 		range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
 		range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
+
 		if config.useOffset:
 			rangeS = (range_min, range_max, schedule_offsetfn)
 		else:
 			rangeS = (range_min, range_max)
 
-		supply_schedule = [ {'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeS], 'stepmode':'fixed'}]
+		supply_schedule = [{'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeS], 'stepmode':config.stepmode}]
 
 		if not config.symmetric:
 			range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
@@ -409,7 +410,7 @@ if __name__ == "__main__":
 		else:
 			rangeD = (range_min, range_max)
 
-		demand_schedule = [ {'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeD], 'stepmode':'fixed'}]
+		demand_schedule = [{'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeD], 'stepmode':config.stepmode}]
 
 		order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
 						'interval':config.interval, 'timemode':config.timemode}
@@ -417,6 +418,7 @@ if __name__ == "__main__":
 		buyers_spec = [('ZIC', numZIC), ('ZIP', numZIP),
 						('GDX', numGDX), ('AA', numAA),
 						('GVWY', numGVWY), ('SHVR', numSHVR)]
+
 		sellers_spec = buyers_spec
 		traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
 
@@ -492,7 +494,7 @@ if __name__ == "__main__":
 				numGVWY = int(ratio[4])
 				numSHVR = int(ratio[5])
 			except ValueError:
-				print("ERROR: Invalid trader schedule. Please enter six integer values. Skipping this trader schedule.")
+				print("ERROR: Invalid trader schedule. Please enter six, comma-separated, integer values. Skipping this trader schedule.")
 				continue
 			except:
 				print("ERROR: Unknown input error. Skipping this trader schedule.")
@@ -508,6 +510,7 @@ if __name__ == "__main__":
 			for _ in range(0, config.numSchedulesPerRatio):
 				range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
 				range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
+
 				if config.useOffset:
 					rangeS = (range_min, range_max, schedule_offsetfn)
 				else:
@@ -518,11 +521,12 @@ if __name__ == "__main__":
 				if not config.symmetric:
 					range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
 					range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
+
 				if config.useOffset:
 					rangeD = (range_min, range_max, schedule_offsetfn)
 				else:
 					rangeD = (range_min, range_max)
-				print(rangeD)
+
 				demand_schedule = [{'from':0, 'to':config.virtualSessionLength, 'ranges':[rangeD], 'stepmode':config.stepmode}]
 
 				order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
@@ -568,3 +572,8 @@ if __name__ == "__main__":
 			tdump.close()
 
 		sys.exit('Done Now')
+	
+	else:
+		print("ERROR: An unknown error has occured. Something is very wrong.")
+		sys.exit()
+

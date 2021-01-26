@@ -51,6 +51,7 @@ import sys
 import math
 import random
 import csv
+import config
 from time import time as timee
 
 bse_sys_minprice = 1  # minimum price in the system, in cents/pennies
@@ -1699,101 +1700,101 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
 def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dumpfile, dump_each_trade, verbose):
 
 
-        # initialise the exchange
-        exchange = Exchange()
+    # initialise the exchange
+    exchange = Exchange()
 
 
-        # create a bunch of traders
-        traders = {}
-        trader_stats = populate_market(trader_spec, traders, True, verbose)
+    # create a bunch of traders
+    traders = {}
+    trader_stats = populate_market(trader_spec, traders, True, verbose)
 
 
-        # timestep set so that can process all traders in one second
-        # NB minimum interarrival time of customer orders may be much less than this!! 
-        timestep = 1.0 / float(trader_stats['n_buyers'] + trader_stats['n_sellers'])
+    # timestep set so that can process all traders in one second
+    # NB minimum interarrival time of customer orders may be much less than this!! 
+    timestep = 1.0 / float(trader_stats['n_buyers'] + trader_stats['n_sellers'])
+    
+    duration = float(endtime - starttime)
+
+    last_update = -1.0
+
+    time = starttime
+
+    orders_verbose = False
+    lob_verbose = False
+    process_verbose = False
+    respond_verbose = False
+    bookkeep_verbose = False
+
+    pending_cust_orders = []
+
+    if verbose: print('\n%s;  ' % (sess_id))
+
+    while time < endtime:
+
+        # how much time left, as a percentage?
+        time_left = (endtime - time) / duration
+
+        # if verbose: print('\n\n%s; t=%08.2f (%4.1f/100) ' % (sess_id, time, time_left*100))
+
+        trade = None
+
+        [pending_cust_orders, kills] = customer_orders(time, last_update, traders, trader_stats,
+                         order_schedule, pending_cust_orders, orders_verbose)
+
+        # if any newly-issued customer orders mean quotes on the LOB need to be cancelled, kill them
+        if len(kills) > 0 :
+            # if verbose : print('Kills: %s' % (kills))
+            for kill in kills :
+                # if verbose : print('lastquote=%s' % traders[kill].lastquote)
+                if traders[kill].lastquote != None :
+                    # if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
+                    exchange.del_order(time, traders[kill].lastquote, verbose)
+
+
+        # get a limit-order quote (or None) from a randomly chosen trader
+        tid = list(traders.keys())[random.randint(0, len(traders) - 1)]
+        time1 = timee()
+        order = traders[tid].getorder(time, time_left, exchange.publish_lob(time, lob_verbose))
+        time2 = timee()
         
-        duration = float(endtime - starttime)
+        # if verbose: print('Trader Quote: %s' % (order))
 
-        last_update = -1.0
+        if order != None:
+            traders[tid].times[0] += time2 - time1
+            traders[tid].times[2] += 1
+            if order.otype == 'Ask' and order.price < traders[tid].orders[0].price: sys.exit('Bad ask')
+            if order.otype == 'Bid' and order.price > traders[tid].orders[0].price: sys.exit('Bad bid')
+            # send order to exchange
+            traders[tid].n_quotes = 1
+            trade = exchange.process_order2(time, order, process_verbose)
+            if trade != None:
+                # trade occurred,
+                # so the counterparties update order lists and blotters
+                traders[trade['party1']].bookkeep(trade, order, bookkeep_verbose, time)
+                traders[trade['party2']].bookkeep(trade, order, bookkeep_verbose, time)
+                if dump_each_trade: trade_stats(sess_id, traders, tdump, time, exchange.publish_lob(time, lob_verbose))
 
-        time = starttime
+            # traders respond to whatever happened
+            lob = exchange.publish_lob(time, lob_verbose)
+            for t in traders:
+                # NB respond just updates trader's internal variables
+                # doesn't alter the LOB, so processing each trader in
+                # sequence (rather than random/shuffle) isn't a problem
+                time3 = timee()
+                traders[t].respond(time, lob, trade, respond_verbose)
+                time4 = timee()
+                traders[t].times[1] += time4 - time3
+                traders[t].times[3] += 1
 
-        orders_verbose = False
-        lob_verbose = False
-        process_verbose = False
-        respond_verbose = False
-        bookkeep_verbose = False
-
-        pending_cust_orders = []
-
-        if verbose: print('\n%s;  ' % (sess_id))
-
-        while time < endtime:
-
-                # how much time left, as a percentage?
-                time_left = (endtime - time) / duration
-
-                # if verbose: print('\n\n%s; t=%08.2f (%4.1f/100) ' % (sess_id, time, time_left*100))
-
-                trade = None
-
-                [pending_cust_orders, kills] = customer_orders(time, last_update, traders, trader_stats,
-                                                 order_schedule, pending_cust_orders, orders_verbose)
-
-                # if any newly-issued customer orders mean quotes on the LOB need to be cancelled, kill them
-                if len(kills) > 0 :
-                        # if verbose : print('Kills: %s' % (kills))
-                        for kill in kills :
-                                # if verbose : print('lastquote=%s' % traders[kill].lastquote)
-                                if traders[kill].lastquote != None :
-                                        # if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
-                                        exchange.del_order(time, traders[kill].lastquote, verbose)
+        time = time + timestep
 
 
-                # get a limit-order quote (or None) from a randomly chosen trader
-                tid = list(traders.keys())[random.randint(0, len(traders) - 1)]
-                time1 = timee()
-                order = traders[tid].getorder(time, time_left, exchange.publish_lob(time, lob_verbose))
-                time2 = timee()
-                
-                # if verbose: print('Trader Quote: %s' % (order))
-
-                if order != None:
-                        traders[tid].times[0] += time2 - time1
-                        traders[tid].times[2] += 1
-                        if order.otype == 'Ask' and order.price < traders[tid].orders[0].price: sys.exit('Bad ask')
-                        if order.otype == 'Bid' and order.price > traders[tid].orders[0].price: sys.exit('Bad bid')
-                        # send order to exchange
-                        traders[tid].n_quotes = 1
-                        trade = exchange.process_order2(time, order, process_verbose)
-                        if trade != None:
-                                # trade occurred,
-                                # so the counterparties update order lists and blotters
-                                traders[trade['party1']].bookkeep(trade, order, bookkeep_verbose, time)
-                                traders[trade['party2']].bookkeep(trade, order, bookkeep_verbose, time)
-                                if dump_each_trade: trade_stats(sess_id, traders, tdump, time, exchange.publish_lob(time, lob_verbose))
-
-                        # traders respond to whatever happened
-                        lob = exchange.publish_lob(time, lob_verbose)
-                        for t in traders:
-                                # NB respond just updates trader's internal variables
-                                # doesn't alter the LOB, so processing each trader in
-                                # sequence (rather than random/shuffle) isn't a problem
-                                time3 = timee()
-                                traders[t].respond(time, lob, trade, respond_verbose)
-                                time4 = timee()
-                                traders[t].times[1] += time4 - time3
-                                traders[t].times[3] += 1
-
-                time = time + timestep
+    # end of an experiment -- dump the tape
+    exchange.tape_dump('transactions.csv', 'a', 'keep')
 
 
-        # end of an experiment -- dump the tape
-        exchange.tape_dump('transactions.csv', 'a', 'keep')
-
-
-        # write trade_stats for this experiment NB end-of-session summary only
-        trade_stats(sess_id, traders, tdump, time, exchange.publish_lob(time, lob_verbose))
+    # write trade_stats for this experiment NB end-of-session summary only
+    trade_stats(sess_id, traders, tdump, time, exchange.publish_lob(time, lob_verbose))
 
 
 
@@ -1804,129 +1805,208 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 
 if __name__ == "__main__":
 
-        # set up parameters for the session
+    if not config.parse_config():
+        sys.exit()
 
-    start_time = 0.0
-    end_time = 600.0
-    duration = end_time - start_time
-
+    # Input configuartion
+    fromConfig = False
+    useCSV = False
+    useCommandLine = False
 
     # schedule_offsetfn returns time-dependent offset on schedule prices
     def schedule_offsetfn(t):
-            pi2 = math.pi * 2
-            c = math.pi * 3000
-            wavelength = t / c
-            gradient = 100 * t / (c / pi2)
-            amplitude = 100 * t / (c / pi2)
-            offset = gradient + amplitude * math.sin(wavelength * t)
-            return int(round(offset, 0))
+        pi2 = math.pi * 2
+        c = math.pi * 3000
+        wavelength = t / c
+        gradient = 100 * t / (c / pi2)
+        amplitude = 100 * t / (c / pi2)
+        offset = gradient + amplitude * math.sin(wavelength * t)
+        return int(round(offset, 0))
+
+    numZIC  = config.numZIC
+    numZIP  = config.numZIP
+    numGDX  = config.numGDX
+    numAA   = config.numAA
+    numGVWY = config.numGVWY
+    numSHVR = config.numSHVR
+
+    numOfArgs = len(sys.argv)
+    if numOfArgs == 1:
+        fromConfig = True
+    elif numOfArgs == 2:
+        useCSV = True
+    elif numOfArgs == 7:
+        useCommandLine = True
+        try:
+            numZIC  = int(sys.argv[1])
+            numZIP  = int(sys.argv[2])
+            numGDX  = int(sys.argv[3])
+            numAA   = int(sys.argv[4])
+            numGVWY = int(sys.argv[5])
+            numSHVR = int(sys.argv[6])
+        except ValueError:
+            print("ERROR: Invalid trader schedule. Please enter six integer values.")
+            sys.exit()
+        except:
+            print("ERROR: Unknown input error.")
+            sys.exit()
+    else:
+        print("Invalid input arguements.")
+        print("Options for running TBSE:")
+        print("	$ python3 TBSE.py  ---  Run using trader schedule from config.")
+        print("	$ python3 TBSE.py <string>.csv  ---  Enter name of csv file describing a series of trader schedules.")
+        print("	$ python3 TBSE.py <int> <int> <int> <int> <int> <int>  ---  Enter 6 integer values representing trader schedule.")
+        sys.exit()
+
+    if numZIC < 0 or numZIP < 0 or numGDX < 0 or numAA < 0 or numGVWY < 0 or numSHVR < 0:
+        print("ERROR: Invalid trader schedule. All input integers should be positive.")
+        sys.exit()
     
-	### This section of code allows for the same order and trader schedules
-	### to be tested n_trails times. Comment out lines 1875-1929 and make sure
-	### that lines 1827-1861 are uncommented.
+    ### This section of code allows for the same order and trader schedules
+    ### to be tested config.numTrials times.
 
-#     ## Stepmode Options: fixed, random, jittered
-#     rangeS = (100, 200)
-#     supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
-#                                             ]
-#     rangeD = (200, 100)
-#     demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
-#                                             ]
+    if fromConfig or useCommandLine:
+        range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
+        range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
 
-#	  ## Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
-#     order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-#                                     'interval':30, 'timemode':'periodic'}
-
-#     buyers_spec = [('ZIP', 10)]
-
-#     sellers_spec = buyers_spec
-#     traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
-
-#     n_trials = 50
-#     tdump=open('avg_balance.csv','w')
-
-
-#     trial = 1
-#     if n_trials > 1:
-#             dump_all = False
-#     else:
-#             dump_all = True
-                    
-#     while (trial<(n_trials+1)):
-#             trial_id = 'trial%07d' % trial
-#             market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
-#             tdump.flush()
-#             trial = trial + 1
-#     tdump.close()
-
-#     sys.exit('Done Now')
-
-	### To use this section of code run TBSE with 'python3 TBSE.py <csv>' 
-	### and have a CSV file with name <csv>.csv with a list of values
-	### representing the number of each trader type present in the 
-	### market you wish to run. The order is:
-	### 				ZIC,ZIP,GDX,AA,GVWY,SHVR
-	### So an example entry would be: 5,5,0,0,5,5
-	### which would be 5 ZIC traders, 5 ZIP traders, 5 Giveaway traders and
-	### 5 Shaver traders. To have different buyer and seller specs modifications
-	### would be needed.
-	### Each line in the CSV file will produce its own output file.
-	### Comment out lines 1827-1855 and make sure tha lines 1875-1929 are uncommented.
-
-    server = int(sys.argv[1])
-    ratios = []
-    with open(str(server)+'.csv', newline = '') as csvfile:
-        reader = csv.reader(csvfile, delimiter=',')
-        for row in reader:
-            ratios.append(row)
-
-    n_trials_per_ratio = 100
-    n_schedules_per_ratio = 10
-    trialnumber = 1
-
-    for ratio in ratios:
-        trdr_1_n = int(ratio[0])
-        trdr_2_n = int(ratio[1])
-        trdr_3_n = int(ratio[2])
-        trdr_4_n = int(ratio[3])
-        trdr_5_n = int(ratio[4])
-        trdr_6_n = int(ratio[5])
-
-        fname = 'bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (trdr_1_n, trdr_2_n, trdr_3_n, trdr_4_n, trdr_5_n, trdr_6_n)
-
-        tdump = open(fname, 'w')
-        for _ in range(0, n_schedules_per_ratio):
-            range_max = random.randint(100,200)
-            range_min = random.randint(1, 100)
+        if config.useOffset:
             rangeS = (range_min, range_max, schedule_offsetfn)
+        else:
+            rangeS = (range_min, range_max)
 
+        supply_schedule = [{'from':config.start_time, 'to':config.end_time, 'ranges':[rangeS], 'stepmode':config.stepmode}]
 
-	#		## Stepmode Options: fixed, random, jittered
-            supply_schedule = [ {'from':0, 'to':600, 'ranges':[rangeS], 'stepmode':'fixed'}
-                                ]
-
-            rangeD = (range_min, range_max,schedule_offsetfn)
-            demand_schedule = [ {'from':0, 'to':600, 'ranges':[rangeD], 'stepmode':'fixed'}
-                                ]
-
-	# 		## Timemode Options: periodic, drip-fixed, drip-jitter, drip-poisson
-            order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-                            'interval':30, 'timemode':'periodic'}
+        if not config.symmetric:
+            range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
+            range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
         
-            buyers_spec = [('ZIC', trdr_1_n), ('ZIP', trdr_2_n),
-                            ('GDX', trdr_3_n), ('AA', trdr_4_n),
-                            ('GVWY', trdr_5_n), ('SHVR', trdr_6_n)]
+        if config.useOffset:
+            rangeD = (range_min, range_max, schedule_offsetfn)
+        else:
+            rangeD = (range_min, range_max)
 
-            sellers_spec = buyers_spec
-            traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
-            
-            trial = 1
-            while trial <= n_trials_per_ratio:
-                trial_id = 'trial%07d' % trialnumber
-                market_session(trial_id, 0, 600, traders_spec, order_sched, tdump, False, False)
+        demand_schedule = [{'from':config.start_time, 'to':config.end_time, 'ranges':[rangeD], 'stepmode':config.stepmode}]
+
+        order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+                        'interval':config.interval, 'timemode':config.timemode}
+
+        buyers_spec = [('ZIC', numZIC), ('ZIP', numZIP),
+                        ('GDX', numGDX), ('AA', numAA),
+                        ('GVWY', numGVWY), ('SHVR', numSHVR)]
+
+        sellers_spec = buyers_spec
+        traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+
+        fname = 'bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (numZIC, numZIP, numGDX, numAA, numGVWY, numSHVR)
+        tdump = open(fname, 'w')
+
+        trial = 1
+        if config.numTrials > 1:
+                dump_all = False
+        else:
+                dump_all = True
+                        
+        while (trial<(config.numTrials+1)):
+                trial_id = 'trial%07d' % trial
+                market_session(trial_id, config.start_time, config.end_time, traders_spec, order_sched, tdump, False, config.verbose)
                 tdump.flush()
                 trial = trial + 1
-                trialnumber = trialnumber + 1
         tdump.close()
+
+        sys.exit('Done Now')
+
+    ### To use this section of code run BSE with 'python3 BSE.py <csv>' 
+    ### and have a CSV file with name <csv>.csv with a list of values
+    ### representing the number of each trader type present in the 
+    ### market you wish to run. The order is:
+    ### 				ZIC,ZIP,GDX,AA,GVWY,SHVR
+    ### So an example entry would be: 5,5,0,0,5,5
+    ### which would be 5 ZIC traders, 5 ZIP traders, 5 Giveaway traders and
+    ### 5 Shaver traders. To have different buyer and seller specs modifications
+    ### would be needed.
+    ### Each line in the CSV file will produce its own output file.
+    elif useCSV:
+        server = sys.argv[1]
+        ratios = []
+        try:
+            with open(server, newline = '') as csvfile:
+                reader = csv.reader(csvfile, delimiter=',')
+                for row in reader:
+                    ratios.append(row)
+        except FileNotFoundError:
+            print("ERROR: File " + server + " not found.")
+            sys.exit()
+        except:
+            print("ERROR: Unknown file reader error.")
+            sys.exit()
+
+        trialnumber = 1
+
+        for ratio in ratios:
+            try:
+                numZIC  = int(ratio[0])
+                numZIP  = int(ratio[1])
+                numGDX  = int(ratio[2])
+                numAA   = int(ratio[3])
+                numGVWY = int(ratio[4])
+                numSHVR = int(ratio[5])
+            except ValueError:
+                print("ERROR: Invalid trader schedule. Please enter six, comma-separated, integer values. Skipping this trader schedule.")
+                continue
+            except:
+                print("ERROR: Unknown input error. Skipping this trader schedule.")
+                continue
+
+            if numZIC < 0 or numZIP < 0 or numGDX < 0 or numAA < 0 or numGVWY < 0 or numSHVR < 0:
+                print("ERROR: Invalid trader schedule. All input integers should be positive. Skipping this trader schedule.")
+                continue
+
+            fname = 'bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (numZIC, numZIP, numGDX, numAA, numGVWY, numSHVR)
+            tdump = open(fname, 'w')
+
+            for _ in range(0, config.numSchedulesPerRatio):
+                range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
+                range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
+
+                if config.useOffset:
+                    rangeS = (range_min, range_max, schedule_offsetfn)
+                else:
+                    rangeS = (range_min, range_max)
+
+                supply_schedule = [{'from':config.start_time, 'to':config.end_time, 'ranges':[rangeS], 'stepmode':config.stepmode}]
+                
+                if not config.symmetric:
+                    range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
+                    range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
+
+                if config.useOffset:
+                    rangeD = (range_min, range_max, schedule_offsetfn)
+                else:
+                    rangeD = (range_min, range_max)
+
+                demand_schedule = [{'from':config.start_time, 'to':config.end_time, 'ranges':[rangeD], 'stepmode':config.stepmode}]
+
+                order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
+                                'interval':config.interval, 'timemode':config.timemode}
+            
+                buyers_spec = [('ZIC', numZIC), ('ZIP', numZIP),
+                                ('GDX', numGDX), ('AA', numAA),
+                                ('GVWY', numGVWY), ('SHVR', numSHVR)]
+
+                sellers_spec = buyers_spec
+                traders_spec = {'sellers':sellers_spec, 'buyers':buyers_spec}
+                
+                trial = 1
+                while trial <= config.numTrialsPerSchedule:
+                    trial_id = 'trial%07d' % trialnumber
+                    market_session(trial_id, config.start_time, config.end_time, traders_spec, order_sched, tdump, False, config.verbose)
+                    tdump.flush()
+                    trial = trial + 1
+                    trialnumber = trialnumber + 1
+            tdump.close()
+
+    else:
+        print("ERROR: An unknown error has occured. Something is very wrong.")
+        sys.exit()
 
 
