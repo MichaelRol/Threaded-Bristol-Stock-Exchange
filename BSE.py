@@ -1800,8 +1800,42 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, dum
 
 #############################
 
-# # Below here is where we set up and run a series of experiments
+def get_order_schedule():
+    range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
+    range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
 
+    if config.useOffset:
+        rangeS = (range_min, range_max, schedule_offsetfn)
+    else:
+        rangeS = (range_min, range_max)
+
+    supply_schedule = [{'from':config.start_time, 'to':config.end_time, 'ranges':[rangeS], 'stepmode':config.stepmode}]
+    
+    if not config.symmetric:
+        range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
+        range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
+
+    if config.useOffset:
+        rangeD = (range_min, range_max, schedule_offsetfn)
+    else:
+        rangeD = (range_min, range_max)
+
+    demand_schedule = [{'from':config.start_time, 'to':config.end_time, 'ranges':[rangeD], 'stepmode':config.stepmode}]
+
+    return {'sup':supply_schedule, 'dem':demand_schedule,
+                    'interval':config.interval, 'timemode':config.timemode}
+
+# schedule_offsetfn returns time-dependent offset on schedule prices
+def schedule_offsetfn(t):
+    pi2 = math.pi * 2
+    c = math.pi * 3000
+    wavelength = t / c
+    gradient = 100 * t / (c / pi2)
+    amplitude = 100 * t / (c / pi2)
+    offset = gradient + amplitude * math.sin(wavelength * t)
+    return int(round(offset, 0))
+
+# # Below here is where we set up and run a series of experiments
 
 if __name__ == "__main__":
 
@@ -1812,16 +1846,6 @@ if __name__ == "__main__":
     fromConfig = False
     useCSV = False
     useCommandLine = False
-
-    # schedule_offsetfn returns time-dependent offset on schedule prices
-    def schedule_offsetfn(t):
-        pi2 = math.pi * 2
-        c = math.pi * 3000
-        wavelength = t / c
-        gradient = 100 * t / (c / pi2)
-        amplitude = 100 * t / (c / pi2)
-        offset = gradient + amplitude * math.sin(wavelength * t)
-        return int(round(offset, 0))
 
     numZIC  = config.numZIC
     numZIP  = config.numZIP
@@ -1866,29 +1890,7 @@ if __name__ == "__main__":
     ### to be tested config.numTrials times.
 
     if fromConfig or useCommandLine:
-        range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
-        range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
-
-        if config.useOffset:
-            rangeS = (range_min, range_max, schedule_offsetfn)
-        else:
-            rangeS = (range_min, range_max)
-
-        supply_schedule = [{'from':config.start_time, 'to':config.end_time, 'ranges':[rangeS], 'stepmode':config.stepmode}]
-
-        if not config.symmetric:
-            range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
-            range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
-        
-        if config.useOffset:
-            rangeD = (range_min, range_max, schedule_offsetfn)
-        else:
-            rangeD = (range_min, range_max)
-
-        demand_schedule = [{'from':config.start_time, 'to':config.end_time, 'ranges':[rangeD], 'stepmode':config.stepmode}]
-
-        order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-                        'interval':config.interval, 'timemode':config.timemode}
+        order_sched = get_order_schedule()
 
         buyers_spec = [('ZIC', numZIC), ('ZIP', numZIP),
                         ('GDX', numGDX), ('AA', numAA),
@@ -1965,29 +1967,8 @@ if __name__ == "__main__":
             tdump = open(fname, 'w')
 
             for _ in range(0, config.numSchedulesPerRatio):
-                range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
-                range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
 
-                if config.useOffset:
-                    rangeS = (range_min, range_max, schedule_offsetfn)
-                else:
-                    rangeS = (range_min, range_max)
-
-                supply_schedule = [{'from':config.start_time, 'to':config.end_time, 'ranges':[rangeS], 'stepmode':config.stepmode}]
-                
-                if not config.symmetric:
-                    range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
-                    range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
-
-                if config.useOffset:
-                    rangeD = (range_min, range_max, schedule_offsetfn)
-                else:
-                    rangeD = (range_min, range_max)
-
-                demand_schedule = [{'from':config.start_time, 'to':config.end_time, 'ranges':[rangeD], 'stepmode':config.stepmode}]
-
-                order_sched = {'sup':supply_schedule, 'dem':demand_schedule,
-                                'interval':config.interval, 'timemode':config.timemode}
+                order_sched = get_order_schedule()
             
                 buyers_spec = [('ZIC', numZIC), ('ZIP', numZIP),
                                 ('GDX', numGDX), ('AA', numAA),

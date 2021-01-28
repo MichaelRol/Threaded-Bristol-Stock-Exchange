@@ -21,10 +21,12 @@ numGVWY = 5
 numSHVR = 0
 
 # Order Schedule
-useOffset = True
-stepmode = 'fixed'  # Valid values: 'fixed', 'jittered', 'random'
-timemode = 'periodic'   # Valid values: 'periodic', 'drip-fixed', 'drip-jitter', 'drip-poisson'
-interval = 30   # Virtual seconds between new set of customer orders being generated. 
+useOffset = True            # Use an offset function to vary equilibrium price, this is disabled if useInputFile = True
+useInputFile = True         # Use an input file to define order schedule (e.g. Real World Trading data)
+input_file = "RWD/IBM-310817.csv"
+stepmode = 'fixed'          # Valid values: 'fixed', 'jittered', 'random'
+timemode = 'periodic'       # Valid values: 'periodic', 'drip-fixed', 'drip-jitter', 'drip-poisson'
+interval = 30               # Virtual seconds between new set of customer orders being generated. 
 
 supply = dict(              # Define range of values from which supply orders can be taken.
     rangeMax = dict (       # Maximum price a supply order can take.
