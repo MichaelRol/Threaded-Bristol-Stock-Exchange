@@ -1,5 +1,6 @@
 import sys
 import random
+import config
 from TBSE_msg_classes import Order
 from TBSE_sys_consts import tbse_sys_maxprice, tbse_sys_minprice
 
@@ -23,27 +24,50 @@ def customer_orders(time, coid, last_update, traders, trader_stats, os, pending,
 
         
 
-        def getorderprice(i, sched, n, mode, issuetime):
-            # does the first schedule range include optional dynamic offset function(s)?
-            if len(sched[0]) > 2:
-                offsetfn = sched[0][2]
-                if callable(offsetfn):
-                    # same offset for min and max
-                    offset_min = offsetfn(issuetime)
-                    offset_max = offset_min
-                else:
-                    sys.exit('FAIL: 3rd argument of sched in getorderprice() not callable')
-                if len(sched[0]) > 3:
-                    # if second offset function is specfied, that applies only to the max value
-                    offsetfn = sched[0][3]
+        def getorderprice(i, sched, sched_end, n, mode, issuetime):
+            if config.useInputFile:
+                if len(sched[0]) > 2:
+                    offsetfn = sched[0][2][0]
+                    offsetfn_params = [sched_end] + [p for p in sched[0][2][1] ]
                     if callable(offsetfn):
-                        # this function applies to max
-                        offset_max = offsetfn(issuetime)
+                        # same offset for min and max
+                        offset_min = offsetfn(issuetime, offsetfn_params)
+                        offset_max = offset_min
                     else:
-                        sys.exit('FAIL: 4th argument of sched in getorderprice() not callable')
+                        sys.exit('FAIL: 3rd argument of sched in getorderprice() should be [callable_fn [params]]')
+                    if len(sched[0]) > 3:
+                        # if second offset function is specfied, that applies only to the max value
+                        offsetfn = sched[0][3][0]
+                        offsetfn_params = [sched_end] + [p for p in sched[0][3][1] ]
+                        if callable(offsetfn):
+                            # this function applies to max
+                            offset_max = offsetfn(issuetime, offsetfn_params)
+                        else:
+                            sys.exit('FAIL: 4th argument of sched in getorderprice() should be [callable_fn [params]]')
+                else:
+                    offset_min = 0.0
+                    offset_max = 0.0
             else:
-                offset_min = 0.0
-                offset_max = 0.0
+                # does the first schedule range include optional dynamic offset function(s)?
+                if len(sched[0]) > 2:
+                    offsetfn = sched[0][2]
+                    if callable(offsetfn):
+                        # same offset for min and max
+                        offset_min = offsetfn(issuetime)
+                        offset_max = offset_min
+                    else:
+                        sys.exit('FAIL: 3rd argument of sched in getorderprice() not callable')
+                    if len(sched[0]) > 3:
+                        # if second offset function is specfied, that applies only to the max value
+                        offsetfn = sched[0][3]
+                        if callable(offsetfn):
+                            # this function applies to max
+                            offset_max = offsetfn(issuetime)
+                        else:
+                            sys.exit('FAIL: 4th argument of sched in getorderprice() not callable')
+                else:
+                    offset_min = 0.0
+                    offset_max = 0.0
 
             pmin = sysmin_check(offset_min + min(sched[0][0], sched[0][1]))
             pmax = sysmax_check(offset_max + max(sched[0][0], sched[0][1]))
@@ -93,7 +117,7 @@ def customer_orders(time, coid, last_update, traders, trader_stats, os, pending,
                     arrtime += interarrivaltime
                 else:
                     sys.exit('FAIL: unknown time-mode in getissuetimes()')
-                issuetimes.append(arrtime) 
+                issuetimes.append(arrtime)
                 
             # at this point, arrtime is the last arrival time
             if fittointerval and ((arrtime > interval) or (arrtime < interval)):
@@ -119,11 +143,12 @@ def customer_orders(time, coid, last_update, traders, trader_stats, os, pending,
                     # within the timezone for this schedule
                     schedrange = sched['ranges']
                     mode = sched['stepmode']
+                    sched_end_time = sched['to']
                     got_one = True
                     exit  # jump out the loop -- so the first matching timezone has priority over any others
             if not got_one:
                 sys.exit('Fail: time=%5.2f not within any timezone in os=%s' % (time, os))
-            return (schedrange, mode)
+            return (schedrange, mode, sched_end_time)
     
 
         n_buyers = trader_stats['n_buyers']
@@ -140,11 +165,11 @@ def customer_orders(time, coid, last_update, traders, trader_stats, os, pending,
             # demand side (buyers)
             issuetimes = getissuetimes(n_buyers, os['timemode'], os['interval'], shuffle_times, True)
             ordertype = 'Bid'
-            (sched, mode) = getschedmode(time, os['dem'])             
+            (sched, mode, sched_end) = getschedmode(time, os['dem'])             
             for t in range(n_buyers):
                 issuetime = time + issuetimes[t]
                 tname = 'B%02d' % t
-                orderprice = getorderprice(t, sched, n_buyers, mode, issuetime)
+                orderprice = getorderprice(t, sched, sched_end, n_buyers, mode, issuetime)
                 order = Order(tname, ordertype, orderprice, 1, issuetime, coid, -3.14)
                 new_pending.append(order) 
                 coid += 1
@@ -152,11 +177,11 @@ def customer_orders(time, coid, last_update, traders, trader_stats, os, pending,
             # supply side (sellers)
             issuetimes = getissuetimes(n_sellers, os['timemode'], os['interval'], shuffle_times, True)
             ordertype = 'Ask'
-            (sched, mode) = getschedmode(time, os['sup'])
+            (sched, mode, sched_end) = getschedmode(time, os['sup'])
             for t in range(n_sellers):
                 issuetime = time + issuetimes[t]
                 tname = 'S%02d' % t
-                orderprice = getorderprice(t, sched, n_sellers, mode, issuetime)
+                orderprice = getorderprice(t, sched, sched_end, n_sellers, mode, issuetime)
                 order = Order(tname, ordertype, orderprice, 1, issuetime, coid, -3.14)
                 new_pending.append(order)
                 coid += 1

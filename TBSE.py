@@ -46,6 +46,7 @@ import sys
 import math
 import threading
 import time
+from datetime import datetime
 import queue
 import random
 import csv
@@ -329,7 +330,10 @@ def get_order_schedule():
 	range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
 	range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
 
-	if config.useOffset:
+	if config.useInputFile:
+		offsetfn_eventlist = get_offset_event_list()
+		rangeS = (range_min, range_max, [real_world_schedule_offsetfn, [offsetfn_eventlist]])
+	elif config.useOffset:
 		rangeS = (range_min, range_max, schedule_offsetfn)
 	else:
 		rangeS = (range_min, range_max)
@@ -340,7 +344,10 @@ def get_order_schedule():
 		range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
 		range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
 
-	if config.useOffset:
+	if config.useInputFile:
+		offsetfn_eventlist = get_offset_event_list()
+		rangeD = (range_min, range_max, [real_world_schedule_offsetfn, [offsetfn_eventlist]])
+	elif config.useOffset:
 		rangeD = (range_min, range_max, schedule_offsetfn)
 	else:
 		rangeD = (range_min, range_max)
@@ -352,6 +359,7 @@ def get_order_schedule():
 
 # schedule_offsetfn returns time-dependent offset on schedule prices
 def schedule_offsetfn(t):
+	print(t)
 	pi2 = math.pi * 2
 	c = math.pi * 3000
 	wavelength = t / c
@@ -359,6 +367,56 @@ def schedule_offsetfn(t):
 	amplitude = 100 * t / (c / pi2)
 	offset = gradient + amplitude * math.sin(wavelength * t)
 	return int(round(offset, 0))
+
+def real_world_schedule_offsetfn(time, params):
+	end_time = float(params[0])
+	offset_events = params[1]
+	# this is quite inefficient: on every call it walks the event-list
+	# come back and make it better
+	percent_elapsed = time/end_time
+	for event in offset_events:
+		offset = event[1]
+		if percent_elapsed < event[0]: break
+	return offset
+
+def get_offset_event_list():
+	# read in a real-world-data data-file for the SDS offset function
+	# having this here means it's only read in once
+	# this is all quite skanky, just to get it up and running
+	# assumes data file is all for one date, sorted in time order, in correct format, etc. etc.
+	rwd_csv = csv.reader(open(config.input_file, 'r'))
+	scale_factor = 80
+	# first pass: get time & price events, find out how long session is, get min & max price
+	minprice = None
+	maxprice = None
+	firsttimeobj = None
+	priceevents=[]
+	for line in rwd_csv:
+		# print(line)
+		time = line[1]
+		if firsttimeobj == None: firsttimeobj = datetime.strptime(time, '%H:%M:%S')
+		timeobj=datetime.strptime(time, '%H:%M:%S')
+		price = float(line[2])
+		if minprice == None or price < minprice: minprice = price
+		if maxprice == None or price > maxprice: maxprice = price
+		timesincestart = (timeobj - firsttimeobj).total_seconds()
+		priceevents.append([timesincestart, price])
+	# second pass: normalise times to fractions of entire time-series duration
+	#              & normalise price range
+	pricerange = maxprice - minprice
+	endtime = float(timesincestart)
+	offsetfn_eventlist=[]
+	for event in priceevents:
+		# normalise price
+		normld_price = (event[1]-minprice)/pricerange
+		# clip
+		normld_price = min(normld_price,1.0)
+		normld_price = max(0.0,normld_price)
+		# scale & convert to integer cents
+		price = int(round(normld_price * scale_factor))
+		normld_event = [event[0]/endtime, price]
+		offsetfn_eventlist.append(normld_event)
+	return offsetfn_eventlist
 
 # # Below here is where we set up and run a series of experiments
 
@@ -442,7 +500,7 @@ if __name__ == "__main__":
 			dump_all = False
 		else:
 			dump_all = True
-				
+
 		while (trial<(config.numTrials+1)):
 			trial_id = 'trial%07d' % trial
 			start_event = threading.Event()

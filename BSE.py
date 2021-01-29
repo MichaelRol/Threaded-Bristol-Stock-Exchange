@@ -50,6 +50,7 @@
 import sys
 import math
 import random
+from datetime import datetime
 import csv
 import config
 from time import time as timee
@@ -1540,27 +1541,50 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
 
         
 
-        def getorderprice(i, sched, n, mode, issuetime):
-                # does the first schedule range include optional dynamic offset function(s)?
-                if len(sched[0]) > 2:
-                        offsetfn = sched[0][2]
-                        if callable(offsetfn):
-                                # same offset for min and max
-                                offset_min = offsetfn(issuetime)
-                                offset_max = offset_min
-                        else:
-                                sys.exit('FAIL: 3rd argument of sched in getorderprice() not callable')
-                        if len(sched[0]) > 3:
-                                # if second offset function is specfied, that applies only to the max value
-                                offsetfn = sched[0][3]
+        def getorderprice(i, sched, sched_end, n, mode, issuetime):
+                if config.useInputFile:
+                        if len(sched[0]) > 2:
+                                offsetfn = sched[0][2][0]
+                                offsetfn_params = [sched_end] + [p for p in sched[0][2][1] ]
                                 if callable(offsetfn):
-                                        # this function applies to max
-                                        offset_max = offsetfn(issuetime)
+                                        # same offset for min and max
+                                        offset_min = offsetfn(issuetime, offsetfn_params)
+                                        offset_max = offset_min
                                 else:
-                                        sys.exit('FAIL: 4th argument of sched in getorderprice() not callable')
+                                        sys.exit('FAIL: 3rd argument of sched in getorderprice() should be [callable_fn [params]]')
+                                if len(sched[0]) > 3:
+                                        # if second offset function is specfied, that applies only to the max value
+                                        offsetfn = sched[0][3][0]
+                                        offsetfn_params = [sched_end] + [p for p in sched[0][3][1] ]
+                                        if callable(offsetfn):
+                                                # this function applies to max
+                                                offset_max = offsetfn(issuetime, offsetfn_params)
+                                        else:
+                                                sys.exit('FAIL: 4th argument of sched in getorderprice() should be [callable_fn [params]]')
+                        else:
+                                offset_min = 0.0
+                                offset_max = 0.0
                 else:
-                        offset_min = 0.0
-                        offset_max = 0.0
+                    # does the first schedule range include optional dynamic offset function(s)?
+                    if len(sched[0]) > 2:
+                            offsetfn = sched[0][2]
+                            if callable(offsetfn):
+                                    # same offset for min and max
+                                    offset_min = offsetfn(issuetime)
+                                    offset_max = offset_min
+                            else:
+                                    sys.exit('FAIL: 3rd argument of sched in getorderprice() not callable')
+                            if len(sched[0]) > 3:
+                                    # if second offset function is specfied, that applies only to the max value
+                                    offsetfn = sched[0][3]
+                                    if callable(offsetfn):
+                                            # this function applies to max
+                                            offset_max = offsetfn(issuetime)
+                                    else:
+                                            sys.exit('FAIL: 4th argument of sched in getorderprice() not callable')
+                    else:
+                            offset_min = 0.0
+                            offset_max = 0.0
 
                 pmin = sysmin_check(offset_min + min(sched[0][0], sched[0][1]))
                 pmax = sysmax_check(offset_max + max(sched[0][0], sched[0][1]))
@@ -1582,6 +1606,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                 else:
                         sys.exit('FAIL: Unknown mode in schedule')
                 orderprice = sysmin_check(sysmax_check(orderprice))
+                print(orderprice)
                 return orderprice
 
 
@@ -1635,11 +1660,12 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                                 # within the timezone for this schedule
                                 schedrange = sched['ranges']
                                 mode = sched['stepmode']
+                                sched_end_time = sched['to']
                                 got_one = True
                                 exit  # jump out the loop -- so the first matching timezone has priority over any others
                 if not got_one:
                         sys.exit('Fail: time=%5.2f not within any timezone in os=%s' % (time, os))
-                return (schedrange, mode)
+                return (schedrange, mode, sched_end_time)
         
 
         n_buyers = trader_stats['n_buyers']
@@ -1657,22 +1683,22 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                 issuetimes = getissuetimes(n_buyers, os['timemode'], os['interval'], shuffle_times, True)
                 
                 ordertype = 'Bid'
-                (sched, mode) = getschedmode(time, os['dem'])             
+                (sched, mode, sched_end) = getschedmode(time, os['dem'])             
                 for t in range(n_buyers):
                         issuetime = time + issuetimes[t]
                         tname = 'B%02d' % t
-                        orderprice = getorderprice(t, sched, n_buyers, mode, issuetime)
+                        orderprice = getorderprice(t, sched, sched_end, n_buyers, mode, issuetime)
                         order = Order(tname, ordertype, orderprice, 1, issuetime, -3.14)
                         new_pending.append(order)
                         
                 # supply side (sellers)
                 issuetimes = getissuetimes(n_sellers, os['timemode'], os['interval'], shuffle_times, True)
                 ordertype = 'Ask'
-                (sched, mode) = getschedmode(time, os['sup'])
+                (sched, mode, sched_end) = getschedmode(time, os['sup'])
                 for t in range(n_sellers):
                         issuetime = time + issuetimes[t]
                         tname = 'S%02d' % t
-                        orderprice = getorderprice(t, sched, n_sellers, mode, issuetime)
+                        orderprice = getorderprice(t, sched, sched_end, n_sellers, mode, issuetime)
                         order = Order(tname, ordertype, orderprice, 1, issuetime, -3.14)
                         new_pending.append(order)
         else:
@@ -1804,7 +1830,10 @@ def get_order_schedule():
     range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
     range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
 
-    if config.useOffset:
+    if config.useInputFile:
+        offsetfn_eventlist = get_offset_event_list()
+        rangeS = (range_min, range_max, [real_world_schedule_offsetfn, [offsetfn_eventlist]])
+    elif config.useOffset:
         rangeS = (range_min, range_max, schedule_offsetfn)
     else:
         rangeS = (range_min, range_max)
@@ -1815,7 +1844,10 @@ def get_order_schedule():
         range_max = random.randint(config.demand['rangeMax']['rangeLow'], config.demand['rangeMax']['rangeHigh'])
         range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
 
-    if config.useOffset:
+    if config.useInputFile:
+        offsetfn_eventlist = get_offset_event_list()
+        rangeD = (range_min, range_max, [real_world_schedule_offsetfn, [offsetfn_eventlist]])
+    elif config.useOffset:
         rangeD = (range_min, range_max, schedule_offsetfn)
     else:
         rangeD = (range_min, range_max)
@@ -1834,6 +1866,57 @@ def schedule_offsetfn(t):
     amplitude = 100 * t / (c / pi2)
     offset = gradient + amplitude * math.sin(wavelength * t)
     return int(round(offset, 0))
+
+def real_world_schedule_offsetfn(time, params):
+    end_time = float(params[0])
+    offset_events = params[1]
+    # this is quite inefficient: on every call it walks the event-list
+    # come back and make it better
+    percent_elapsed = time/end_time
+    for event in offset_events:
+        offset = event[1]
+        if percent_elapsed < event[0]: break
+    return offset
+
+def get_offset_event_list():
+    # read in a real-world-data data-file for the SDS offset function
+    # having this here means it's only read in once
+    # this is all quite skanky, just to get it up and running
+    # assumes data file is all for one date, sorted in time order, in correct format, etc. etc.
+    rwd_csv = csv.reader(open(config.input_file, 'r'))
+    scale_factor = 80
+    # first pass: get time & price events, find out how long session is, get min & max price
+    minprice = None
+    maxprice = None
+    firsttimeobj = None
+    priceevents=[]
+    for line in rwd_csv:
+        # print(line)
+        time = line[1]
+        if firsttimeobj == None: firsttimeobj = datetime.strptime(time, '%H:%M:%S')
+        timeobj=datetime.strptime(time, '%H:%M:%S')
+        price = float(line[2])
+        if minprice == None or price < minprice: minprice = price
+        if maxprice == None or price > maxprice: maxprice = price
+        timesincestart = (timeobj - firsttimeobj).total_seconds()
+        priceevents.append([timesincestart, price])
+    # second pass: normalise times to fractions of entire time-series duration
+    #              & normalise price range
+    pricerange = maxprice - minprice
+    endtime = float(timesincestart)
+    offsetfn_eventlist=[]
+    for event in priceevents:
+        # normalise price
+        normld_price = (event[1]-minprice)/pricerange
+        # clip
+        normld_price = min(normld_price,1.0)
+        normld_price = max(0.0,normld_price)
+        # scale & convert to integer cents
+        price = int(round(normld_price * scale_factor))
+        normld_event = [event[0]/endtime, price]
+        offsetfn_eventlist.append(normld_event)
+    return offsetfn_eventlist
+
 
 # # Below here is where we set up and run a series of experiments
 
