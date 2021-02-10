@@ -55,8 +55,8 @@ demand = dict(              # Define range of values from which demand orders ca
 numTrials = 50
 
 # For multiple schedules: using input csv file. 
-numSchedulesPerRatio = 2     # Number of schedules per ratio of traders in csv file.
-numTrialsPerSchedule = 5     # Number of trails per schedule.
+numSchedulesPerRatio = 10     # Number of schedules per ratio of traders in csv file.
+numTrialsPerSchedule = 100     # Number of trails per schedule.
 symmetric = True             # Should range of supply = range of demand?
 
 # Function for parsing config values.
