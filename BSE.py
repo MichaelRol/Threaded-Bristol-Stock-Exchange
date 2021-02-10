@@ -1606,7 +1606,6 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                 else:
                         sys.exit('FAIL: Unknown mode in schedule')
                 orderprice = sysmin_check(sysmax_check(orderprice))
-                print(orderprice)
                 return orderprice
 
 
@@ -1891,7 +1890,6 @@ def get_offset_event_list():
     firsttimeobj = None
     priceevents=[]
     for line in rwd_csv:
-        # print(line)
         time = line[1]
         if firsttimeobj == None: firsttimeobj = datetime.strptime(time, '%H:%M:%S')
         timeobj=datetime.strptime(time, '%H:%M:%S')
