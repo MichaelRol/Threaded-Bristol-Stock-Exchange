@@ -2046,7 +2046,7 @@ if __name__ == "__main__":
                 print("ERROR: Invalid trader schedule. All input integers should be positive. Skipping this trader schedule.")
                 continue
 
-            fname = 'bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (numZIC, numZIP, numGDX, numAA, numGVWY, numSHVR)
+            fname = 'Results/bse-%02d-%02d-%02d-%02d-%02d-%02d.csv' % (numZIC, numZIP, numGDX, numAA, numGVWY, numSHVR)
             tdump = open(fname, 'w')
 
             for _ in range(0, config.numSchedulesPerRatio):
