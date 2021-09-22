@@ -1,10 +1,10 @@
-'''TBSE Config File'''
+"""TBSE Config File"""
 # pylint: skip-file
 
 # General
-sessionLength = 1   # Length of session in seconds.
+sessionLength = 1  # Length of session in seconds.
 virtualSessionLength = 600  # Number of virtual timesteps per sessionLength.
-verbose = False     # Adds additional output for debugging.
+verbose = False  # Adds additional output for debugging.
 
 # BSE ONLY
 start_time = 0.0
@@ -13,51 +13,50 @@ end_time = 600.0
 # Trader Schedule
 # Define number of each algorithm used one side of exchange (buyers or sellers).
 # Same values will be used to define other side of exchange (buyers = sellers).
-numZIC  = 5
-numZIP  = 0
-numGDX  = 5
-numAA   = 0
-numGVWY = 5
+numZIC = 5
+numZIP = 5
+numGDX = 0
+numAA = 0
+numGVWY = 0
 numSHVR = 0
 
 # Order Schedule
-useOffset = True            # Use an offset function to vary equilibrium price, this is disabled if useInputFile = True
-useInputFile = True         # Use an input file to define order schedule (e.g. Real World Trading data)
+useOffset = True  # Use an offset function to vary equilibrium price, this is disabled if useInputFile = True
+useInputFile = True  # Use an input file to define order schedule (e.g. Real World Trading data)
 input_file = "RWD/IBM-310817.csv"
-stepmode = 'fixed'          # Valid values: 'fixed', 'jittered', 'random'
-timemode = 'periodic'       # Valid values: 'periodic', 'drip-fixed', 'drip-jitter', 'drip-poisson'
-interval = 30               # Virtual seconds between new set of customer orders being generated. 
+stepmode = 'fixed'  # Valid values: 'fixed', 'jittered', 'random'
+timemode = 'periodic'  # Valid values: 'periodic', 'drip-fixed', 'drip-jitter', 'drip-poisson'
+interval = 30  # Virtual seconds between new set of customer orders being generated.
 
-supply = dict(              # Define range of values from which supply orders can be taken.
-    rangeMax = dict (       # Maximum price a supply order can take.
-        rangeHigh = 200,    # RangeMax value is chosen at random from between these two values.
-        rangeLow = 100      # For a fixed schedule set rangeHigh = rangeLow.
-    ),
-    rangeMin = dict (       # Minimum order a supply order can take.
-        rangeHigh = 100,    # RangeMax value is chosen at random from between these two values.
-        rangeLow = 0        # For a fixed schedule set rangeHigh = rangeLow.
-    )
-)
+supply = {
+    'rangeMax': {
+        'rangeHigh': 200,
+        'rangeLow': 100
+    }, 'rangeMin': {
+        'rangeHigh': 100,
+        'rangeLow': 0
+    }
+}
 
 ### NOTE: If symmetric = True this schedule is ignored and the demand schedule will equal the above supply schedule.
-demand = dict(              # Define range of values from which demand orders can be taken.
-    rangeMax = dict (       # Maximum price a demand order can take.
-        rangeHigh = 200,    # RangeMax value is chosen at random from between these two values.
-        rangeLow = 100      # For a fixed schedule set rangeHigh = rangeLow.
-    ),
-    rangeMin = dict (       # Minimum order a demand order can take.
-        rangeHigh = 100,    # RangeMax value is chosen at random from between these two values.
-        rangeLow = 0        # For a fixed schedule set rangeHigh = rangeLow.
-    )
-)
+demand = {
+    'rangeMax': {
+        'rangeHigh': 200,
+        'rangeLow': 100
+    }, 'rangeMin': {
+        'rangeHigh': 100,
+        'rangeLow': 0
+    }
+}
 
 # For single schedule: using config trader schedule, or command-line trader schedule.
 numTrials = 50
 
 # For multiple schedules: using input csv file. 
-numSchedulesPerRatio = 10     # Number of schedules per ratio of traders in csv file.
-numTrialsPerSchedule = 100     # Number of trails per schedule.
-symmetric = True             # Should range of supply = range of demand?
+numSchedulesPerRatio = 10  # Number of schedules per ratio of traders in csv file.
+numTrialsPerSchedule = 100  # Number of trails per schedule.
+symmetric = True  # Should range of supply = range of demand?
+
 
 # Function for parsing config values.
 def parse_config():
@@ -93,8 +92,12 @@ def parse_config():
     if not isinstance(interval, int):
         print("CONFIG ERROR: interval must be integer.")
         valid = False
-    if not (isinstance(supply['rangeMax']['rangeHigh'], int) and isinstance(supply['rangeMax']['rangeLow'], int) and isinstance(supply['rangeMin']['rangeHigh'], int) and isinstance(supply['rangeMin']['rangeLow'], int) and
-            isinstance(demand['rangeMax']['rangeHigh'], int) and isinstance(demand['rangeMax']['rangeLow'], int) and isinstance(demand['rangeMin']['rangeHigh'], int) and isinstance(demand['rangeMin']['rangeLow'], int)):
+    if not (isinstance(supply['rangeMax']['rangeHigh'], int) and isinstance(supply['rangeMax']['rangeLow'],
+                                                                            int) and isinstance(
+        supply['rangeMin']['rangeHigh'], int) and isinstance(supply['rangeMin']['rangeLow'], int) and
+            isinstance(demand['rangeMax']['rangeHigh'], int) and isinstance(demand['rangeMax']['rangeLow'],
+                                                                            int) and isinstance(
+                demand['rangeMin']['rangeHigh'], int) and isinstance(demand['rangeMin']['rangeLow'], int)):
         print("CONFIG ERROR: Trader schedule values must be integer.")
         valid = False
     if not isinstance(numTrials, int):
@@ -134,12 +137,16 @@ def parse_config():
     if interval <= 0:
         print("CONFIG ERROR: interval must be greater than 0.")
         valid = False
-    if (supply['rangeMax']['rangeHigh'] < 0 or supply['rangeMax']['rangeLow'] < 0 or supply['rangeMin']['rangeHigh'] < 0 or supply['rangeMin']['rangeLow'] < 0 or
-       demand['rangeMax']['rangeHigh'] < 0 or demand['rangeMax']['rangeLow'] < 0 or demand['rangeMin']['rangeHigh'] < 0 or demand['rangeMin']['rangeLow'] < 0):
+    if (supply['rangeMax']['rangeHigh'] < 0 or supply['rangeMax']['rangeLow'] < 0 or supply['rangeMin'][
+        'rangeHigh'] < 0 or supply['rangeMin']['rangeLow'] < 0 or
+            demand['rangeMax']['rangeHigh'] < 0 or demand['rangeMax']['rangeLow'] < 0 or demand['rangeMin'][
+                'rangeHigh'] < 0 or demand['rangeMin']['rangeLow'] < 0):
         print("CONFIG ERROR: Supply range values must be greater than 0.")
         valid = False
-    if (supply['rangeMax']['rangeHigh'] < supply['rangeMax']['rangeLow'] or demand['rangeMax']['rangeHigh'] < demand['rangeMax']['rangeLow'] or
-        supply['rangeMin']['rangeHigh'] < supply['rangeMin']['rangeLow'] or demand['rangeMin']['rangeHigh'] < demand['rangeMin']['rangeLow']):
+    if (supply['rangeMax']['rangeHigh'] < supply['rangeMax']['rangeLow'] or demand['rangeMax']['rangeHigh'] <
+            demand['rangeMax']['rangeLow'] or
+            supply['rangeMin']['rangeHigh'] < supply['rangeMin']['rangeLow'] or demand['rangeMin']['rangeHigh'] <
+            demand['rangeMin']['rangeLow']):
         print("CONFIG ERROR: rangeMax must be greater than or equal to rangeMin.")
         valid = False
     if numTrials < 1:
@@ -151,6 +158,5 @@ def parse_config():
     if numTrialsPerSchedule < 1:
         print("CONFIG ERROR: numTrialsPerSchedule must be greater than or equal to 1.")
         valid = False
-
 
     return valid
