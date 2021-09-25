@@ -164,7 +164,11 @@ class Exchange(Orderbook):
         return [order.toid, response]
 
     def del_order(self, time, order):
-        # delete a trader's quot/order from the exchange, update all internal records
+        """
+        delete a trader's quote/order from the exchange, update all internal records
+        :param time: Time when the order is being deleted
+        :param order: The order to delete
+        """
 
         if order.otype == 'Bid':
             self.bids.book_del(order)
@@ -175,7 +179,7 @@ class Exchange(Orderbook):
             else:  # this side of book is empty
                 self.bids.best_price = None
                 self.bids.best_tid = None
-            cancel_record = {'type': 'Cancel', 'time': time, 'order': order}
+            cancel_record = {'type': 'Cancel', 't': time, 'order': order}
             self.tape.append(cancel_record)
 
         elif order.otype == 'Ask':
@@ -187,17 +191,21 @@ class Exchange(Orderbook):
             else:  # this side of book is empty
                 self.asks.best_price = None
                 self.asks.best_tid = None
-            cancel_record = {'type': 'Cancel', 'time': time, 'order': order}
+            cancel_record = {'type': 'Cancel', 't': time, 'order': order}
             self.tape.append(cancel_record)
         else:
             # neither bid nor ask?
             sys.exit('bad order type in del_quote()')
 
-    # this returns the LOB data "published" by the exchange,
-    # i.e., what is accessible to the traders
     def publish_lob(self, time, verbose):
+        """
+        this returns the LOB data "published" by the exchange, i.e., what is accessible to the traders
+        :param time: Current t
+        :param verbose: Flag indicate whether additional information should be printed to console
+        :return: JSON object representing the current state of the LOB
+        """
         public_data = {
-            'time': time,
+            't': time,
             'bids':
                 {
                     'best': self.bids.best_price,
@@ -281,7 +289,7 @@ class Exchange(Orderbook):
                 print('>>>>>>>>>>>>>>>>>TRADE t=%5.2f $%d %s %s' % (time, price, counterparty, order.tid))
             transaction_record = {
                 'type': 'Trade',
-                'time': time,
+                't': time,
                 'price': price,
                 'party1': counterparty,
                 'party2': order.tid,
@@ -298,7 +306,7 @@ class Exchange(Orderbook):
         dumpfile = open(fname, fmode)
         for tape_item in self.tape:
             if tape_item['type'] == 'Trade':
-                dumpfile.write('%s, %s\n' % (tape_item['time'], tape_item['price']))
+                dumpfile.write('%s, %s\n' % (tape_item['t'], tape_item['price']))
         dumpfile.close()
         if tmode == 'wipe':
             self.tape = []

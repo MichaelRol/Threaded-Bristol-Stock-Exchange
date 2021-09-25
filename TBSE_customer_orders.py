@@ -110,10 +110,10 @@ def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
                 inter_arrival_time = random.expovariate(n_traders / interval)
                 arr_time += inter_arrival_time
             else:
-                sys.exit('FAIL: unknown time-mode in get_issue_times()')
+                sys.exit('FAIL: unknown t-mode in get_issue_times()')
             issue_times.append(arr_time)
 
-        # at this point, arr_time is the last arrival time
+        # at this point, arr_time is the last arrival t
         if fit_to_interval and ((arr_time > interval) or (arr_time < interval)):
             # generated sum of inter-arrival times longer than the interval
             # squish them back so that last arrival falls at t=interval
@@ -140,7 +140,7 @@ def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
                 got_one = True
                 break  # jump out the loop -- so the first matching timezone has priority over any others
         if not got_one:
-            sys.exit('Fail: time=%5.2f not within any timezone in os=%s' % (time, os))
+            sys.exit('Fail: t=%5.2f not within any timezone in os=%s' % (time, os))
         return schedrange, mode, sched_end_time
 
     n_buyers = trader_stats['n_buyers']

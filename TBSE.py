@@ -1,46 +1,46 @@
-# -*- coding: utf-8 -*-
-#
-# TBSE: The Threaded Bristol Stock Exchange
-#
-# Version 1.0; Augusts 1st, 2020.
-#
-# ------------------------
-# Copyright (c) 2020, Michael Rollins
-#
-# MIT Open-Source License:
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
-# subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all copies or substantial
-# portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-# LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
-# ------------------------
-#
-#
-#
-# TBSE is a very simple simulation of automated execution traders
-# operating on a very simple model of a limit order book (LOB) exchange
-# extended from Dave Cliff's Bristol Stock Exchange (BSE). TBSE uses
-# Python multi-threading to allow multiple traders to operate simultaneously
-# which means that the execution time of trading algorithms can affect
-# their performance.
-#
-# major simplifications in this version:
-#       (a) only one financial instrument being traded
-#       (b) traders can only trade contracts of size 1 (will add variable quantities later)
-#       (c) each trader can have max of one order per single orderbook.
-#       (d) traders can replace/overwrite earlier orders, and/or can cancel
-#
-# NB this code has been written to be readable/intelligible, not efficient!
+"""-*- coding: utf-8 -*-
+
+TBSE: The Threaded Bristol Stock Exchange
+
+Version 1.0; Augusts 1st, 2020.
+
+------------------------
+Copyright (c) 2020, Michael Rollins
+
+MIT Open-Source License:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial
+portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+------------------------
+
+
+
+TBSE is a very simple simulation of automated execution traders
+operating on a very simple model of a limit order book (LOB) exchange
+extended from Dave Cliff's Bristol Stock Exchange (BSE). TBSE uses
+Python multi-threading to allow multiple traders to operate simultaneously
+which means that the execution t of trading algorithms can affect
+their performance.
+
+major simplifications in this version:
+      (a) only one financial instrument being traded
+      (b) traders can only trade contracts of size 1 (will add variable quantities later)
+      (c) each trader can have max of one order per single orderbook.
+      (d) traders can replace/overwrite earlier orders, and/or can cancel
+
+NB this code has been written to be readable/intelligible, not efficient!"""
 
 import csv
 import math
@@ -54,92 +54,102 @@ from datetime import datetime
 import config
 from TBSE_customer_orders import customer_orders
 from TBSE_exchange import Exchange
-from TBSE_trader_agents import TraderGiveaway, Trader_Shaver, Trader_Sniper, \
-    Trader_ZIC, Trader_ZIP, Trader_AA, Trader_GDX
+from TBSE_trader_agents import TraderGiveaway, TraderShaver, TraderSniper, \
+    TraderZic, TraderZip, TraderAa, TraderGdx
 
-
-# trade_stats()
-# dump CSV statistics on exchange data and trader population to file for later analysis
-# this makes no assumptions about the number of types of traders, or
-# the number of traders of any one type -- allows either/both to change
-# between successive calls, but that does make it inefficient as it has to
-# re-analyse the entire set of traders on each call
 
 # Adapted from original BSE code
 def trade_stats(expid, traders, dumpfile):
+    """dump CSV statistics on exchange data and trader population to file for later analysis
+    this makes no assumptions about the number of types of traders, or
+    the number of traders of any one type -- allows either/both to change
+    between successive calls, but that does make it inefficient as it has to
+    re-analyse the entire set of traders on each call"""
     trader_types = {}
     for t in traders:
-        ttype = traders[t].ttype
-        if ttype in trader_types.keys():
-            t_balance = trader_types[ttype]['balance_sum'] + traders[t].balance
-            t_trades = trader_types[ttype]['trades_sum'] + traders[t].n_trades
-            t_time1 = trader_types[ttype]['time1'] + traders[t].times[0] / traders[t].times[2]
-            t_time2 = trader_types[ttype]['time2'] + traders[t].times[1] / traders[t].times[3]
-            n = trader_types[ttype]['n'] + 1
+        trader_type = traders[t].ttype
+        if trader_type in trader_types.keys():
+            t_balance = trader_types[trader_type]['balance_sum'] + traders[t].balance
+            t_trades = trader_types[trader_type]['trades_sum'] + traders[t].n_trades
+            t_time1 = trader_types[trader_type]['time1'] + traders[t].times[0] / traders[t].times[2]
+            t_time2 = trader_types[trader_type]['time2'] + traders[t].times[1] / traders[t].times[3]
+            n = trader_types[trader_type]['n'] + 1
         else:
             t_balance = traders[t].balance
             t_time1 = traders[t].times[0] / traders[t].times[2]
             t_time2 = traders[t].times[1] / traders[t].times[3]
             n = 1
             t_trades = traders[t].n_trades
-        trader_types[ttype] = {'n': n, 'balance_sum': t_balance, 'trades_sum': t_trades, 'time1': t_time1,
-                               'time2': t_time2}
+        trader_types[trader_type] = {'n': n, 'balance_sum': t_balance, 'trades_sum': t_trades, 'time1': t_time1,
+                                     'time2': t_time2}
 
-    # dumpfile.write('%s, %06d, ' % (expid, time))
+    # dumpfile.write('%s, %06d, ' % (expid, t))
     dumpfile.write('%s, ' % expid)
-    for ttype in sorted(list(trader_types.keys())):
-        n = trader_types[ttype]['n']
-        s = trader_types[ttype]['balance_sum']
-        t = trader_types[ttype]['trades_sum']
-        time1 = trader_types[ttype]['time1']
-        time2 = trader_types[ttype]['time2']
+    for trader_type in sorted(list(trader_types.keys())):
+        n = trader_types[trader_type]['n']
+        s = trader_types[trader_type]['balance_sum']
+        t = trader_types[trader_type]['trades_sum']
+        time1 = trader_types[trader_type]['time1']
+        time2 = trader_types[trader_type]['time2']
         dumpfile.write('%s, %d, %d, %f, %f, %f, %f, ' % (
-            ttype, s, n, s / float(n), t / float(n), time1 / float(n), time2 / float(n)))
+            trader_type, s, n, s / float(n), t / float(n), time1 / float(n), time2 / float(n)))
 
     dumpfile.write('\n')
 
 
-# create a bunch of traders from traders_spec
-# returns tuple (n_buyers, n_sellers)
-# optionally shuffles the pack of buyers and the pack of sellers
 # From original BSE code
-def populate_market(traders_spec, traders, shuffle, verbose):
-    def trader_type(robot_type, name):
+def populate_market(trader_spec, traders, shuffle, verbose):
+    """create a bunch of trader_list from trader_spec
+    returns tuple (n_buyers, n_sellers)
+    optionally shuffles the pack of buyers and the pack of sellers"""
+    def create_trader(robot_type, name):
+        """
+        Function that creates instances of the different Trader Types
+        :param robot_type: String representing type of trader to be created
+        :param name: String, name given to trader
+        :return: Instantiated Trader object
+        """
         if robot_type == 'GVWY':
             return TraderGiveaway('GVWY', name, 0.00, 0)
         elif robot_type == 'ZIC':
-            return Trader_ZIC('ZIC', name, 0.00, 0)
+            return TraderZic('ZIC', name, 0.00, 0)
         elif robot_type == 'SHVR':
-            return Trader_Shaver('SHVR', name, 0.00, 0)
+            return TraderShaver('SHVR', name, 0.00, 0)
         elif robot_type == 'SNPR':
-            return Trader_Sniper('SNPR', name, 0.00, 0)
+            return TraderSniper('SNPR', name, 0.00, 0)
         elif robot_type == 'ZIP':
-            return Trader_ZIP('ZIP', name, 0.00, 0)
+            return TraderZip('ZIP', name, 0.00, 0)
         elif robot_type == 'AA':
-            return Trader_AA('AA', name, 0.00, 0)
+            return TraderAa('AA', name, 0.00, 0)
         elif robot_type == 'GDX':
-            return Trader_GDX('GDX', name, 0.00, 0)
+            return TraderGdx('GDX', name, 0.00, 0)
         else:
             sys.exit('FATAL: don\'t know robot type %s\n' % robot_type)
 
-    def shuffle_traders(ttype_char, n, traders):
+    def shuffle_traders(ttype_char, n, trader_list):
+        """
+        Shuffles traders to avoid any biases caused by trader position.
+        :param ttype_char: 'B' if buyers, 'S' if sellers
+        :param n: int - number of traders being shuffles
+        :param trader_list: list of traders to shuffle
+        """
         for swap in range(n):
             t1 = (n - 1) - swap
             t2 = random.randint(0, t1)
             t1name = '%c%02d' % (ttype_char, t1)
             t2name = '%c%02d' % (ttype_char, t2)
-            traders[t1name].tid = t2name
-            traders[t2name].tid = t1name
-            temp = traders[t1name]
-            traders[t1name] = traders[t2name]
-            traders[t2name] = temp
+            trader_list[t1name].tid = t2name
+            trader_list[t2name].tid = t1name
+            temp = trader_list[t1name]
+            trader_list[t1name] = trader_list[t2name]
+            trader_list[t2name] = temp
 
     n_buyers = 0
-    for bs in traders_spec['buyers']:
-        ttype = bs[0]
+    for bs in trader_spec['buyers']:
+        trader_type = bs[0]
         for _ in range(bs[1]):
             tname = 'B%02d' % n_buyers  # buyer i.d. string
-            traders[tname] = trader_type(ttype, tname)
+            traders[tname] = create_trader(trader_type, tname)
             n_buyers = n_buyers + 1
 
     if n_buyers < 1:
@@ -149,11 +159,11 @@ def populate_market(traders_spec, traders, shuffle, verbose):
         shuffle_traders('B', n_buyers, traders)
 
     n_sellers = 0
-    for ss in traders_spec['sellers']:
-        ttype = ss[0]
+    for ss in trader_spec['sellers']:
+        trader_type = ss[0]
         for _ in range(ss[1]):
             tname = 'S%02d' % n_sellers  # buyer i.d. string
-            traders[tname] = trader_type(ttype, tname)
+            traders[tname] = create_trader(trader_type, tname)
             n_sellers = n_sellers + 1
 
     if n_sellers < 1:
@@ -183,6 +193,20 @@ def run_exchange(
         sess_length,
         virtual_end,
         process_verbose):
+    """
+    Function for running of the exchange.
+    :param exchange: Exchange object
+    :param order_q: Queue on which new orders are sent to the queue
+    :param trader_qs: Queues by which traders receive updates from the exchange
+    :param kill_q: Queue where orders to be removed from the exchange are placed
+    :param start_event: Event indicating if the exchange is active
+    :param start_time: float, represents the start t (seconds since 1970)
+    :param sess_length: int, number of seconds the
+    :param virtual_end: The number of virtual seconds the trading day lasts for
+    :param process_verbose: Flag indicating whether additional information about order processing should be printed
+                            to console
+    :return: Returns 0 on completion of trading day
+    """
     completed_coid = {}
     start_event.wait()
     while start_event.isSet():
@@ -190,7 +214,7 @@ def run_exchange(
         virtual_time = (time.time() - start_time) * (virtual_end / sess_length)
 
         while kill_q.empty() is False:
-            exchange.del_order(virtual_time, kill_q.get(), False)
+            exchange.del_order(virtual_time, kill_q.get())
 
         order = order_q.get()
         if order.coid in completed_coid:
@@ -220,6 +244,20 @@ def run_trader(
         virtual_end,
         respond_verbose,
         bookkeep_verbose):
+    """
+    Function for running a single trader. Multiple of these are run on a number of threads created in market_session()
+    :param trader: The trader this function is controlling
+    :param exchange: The exchange object
+    :param order_q: Queue where the trader places new orders to send to the exchange
+    :param trader_q: Queue where the exchange updates this trader on activities in the market
+    :param start_event: Event flagging whether the market session is in progress
+    :param start_time: Time at which market session begins
+    :param sess_length: Length of market session in real world seconds
+    :param virtual_end: Virtual number of seconds the market session ends at
+    :param respond_verbose: Should the trader display additional information on its response
+    :param bookkeep_verbose: Should there be additional bookkeeping information displayed on the console
+    :return: Returns 0 at the end of the market session
+    """
     start_event.wait()
 
     while start_event.isSet():
@@ -243,7 +281,7 @@ def run_trader(
         time1 = time.time()
         trader.respond(virtual_time, lob, trade, respond_verbose)
         time2 = time.time()
-        order = trader.getorder(virtual_time, time_left, lob)
+        order = trader.get_order(virtual_time, time_left, lob)
         time3 = time.time()
         trader.times[1] += time2 - time1
         trader.times[3] += 1
@@ -269,6 +307,17 @@ def market_session(
         order_schedule,
         start_event,
         verbose):
+    """
+    Function representing a market session
+    :param sess_id: ID of the session
+    :param sess_length: Length of session in real world seconds
+    :param virtual_end: Number of virtual seconds before the session ends
+    :param trader_spec: JSON data representing the number and types of traders on the market
+    :param order_schedule: JSON data representing the supply/demand curve of the market
+    :param start_event: Event showing whether the market session is in progress
+    :param verbose: Should additional information be printed to the console
+    :return: Returns the number of threads operating at the end of the session. Used to check threads didn't crash.
+    """
     # initialise the exchange
     exchange = Exchange()
     order_q = queue.Queue()
@@ -277,7 +326,6 @@ def market_session(
     start_time = time.time()
 
     orders_verbose = False
-    lob_verbose = False
     process_verbose = False
     respond_verbose = False
     bookkeep_verbose = False
@@ -373,14 +421,18 @@ def market_session(
 #############################
 
 def get_order_schedule():
+    """
+    Produces order schedule as defined in config file.
+    :return: Order schedule representing the supply/demand curve of the market
+    """
     range_max = random.randint(config.supply['rangeMax']['rangeLow'], config.supply['rangeMax']['rangeHigh'])
     range_min = random.randint(config.supply['rangeMin']['rangeLow'], config.supply['rangeMin']['rangeHigh'])
 
     if config.useInputFile:
-        offsetfn_eventlist = get_offset_event_list()
-        range_s = (range_min, range_max, [real_world_schedule_offsetfn, [offsetfn_eventlist]])
+        offset_function_event_list = get_offset_event_list()
+        range_s = (range_min, range_max, [real_world_schedule_offset_function, [offset_function_event_list]])
     elif config.useOffset:
-        range_s = (range_min, range_max, schedule_offsetfn)
+        range_s = (range_min, range_max, schedule_offset_function)
     else:
         range_s = (range_min, range_max)
 
@@ -391,10 +443,10 @@ def get_order_schedule():
         range_min = random.randint(config.demand['rangeMin']['rangeLow'], config.demand['rangeMin']['rangeHigh'])
 
     if config.useInputFile:
-        offsetfn_eventlist = get_offset_event_list()
-        range_d = (range_min, range_max, [real_world_schedule_offsetfn, [offsetfn_eventlist]])
+        offset_function_event_list = get_offset_event_list()
+        range_d = (range_min, range_max, [real_world_schedule_offset_function, [offset_function_event_list]])
     elif config.useOffset:
-        range_d = (range_min, range_max, schedule_offsetfn)
+        range_d = (range_min, range_max, schedule_offset_function)
     else:
         range_d = (range_min, range_max)
 
@@ -404,8 +456,12 @@ def get_order_schedule():
             'interval': config.interval, 'timemode': config.timemode}
 
 
-# schedule_offsetfn returns time-dependent offset on schedule prices
-def schedule_offsetfn(t):
+def schedule_offset_function(t):
+    """
+    schedule_offset_function returns t-dependent offset on schedule prices
+    :param t: Time at which we are retrieving the offset
+    :return: The offset
+    """
     print(t)
     pi2 = math.pi * 2
     c = math.pi * 3000
@@ -416,12 +472,19 @@ def schedule_offsetfn(t):
     return int(round(offset, 0))
 
 
-def real_world_schedule_offsetfn(time, params):
+def real_world_schedule_offset_function(t, params):
+    """
+    Returns offset based on real world data read in via CSV
+    :param t: Time at which the offset is being calculated
+    :param params: Parameters used to find offset
+    :return: The offset
+    """
     end_time = float(params[0])
     offset_events = params[1]
     # this is quite inefficient: on every call it walks the event-list
     # come back and make it better
-    percent_elapsed = time / end_time
+    percent_elapsed = t / end_time
+    offset = 0
     for event in offset_events:
         offset = event[1]
         if percent_elapsed < event[0]:
@@ -430,22 +493,27 @@ def real_world_schedule_offsetfn(time, params):
 
 
 def get_offset_event_list():
-    # read in a real-world-data data-file for the SDS offset function
-    # having this here means it's only read in once
-    # this is all quite skanky, just to get it up and running
-    # assumes data file is all for one date, sorted in time order, in correct format, etc. etc.
+    """
+    read in a real-world-data data-file for the SDS offset function
+    having this here means it's only read in once
+    this is all quite skanky, just to get it up and running
+    assumes data file is all for one date, sorted in t order, in correct format, etc. etc.
+    :return: list of offset events
+    """
+
     rwd_csv = csv.reader(open(config.input_file, 'r'))
     scale_factor = 80
-    # first pass: get time & price events, find out how long session is, get min & max price
+    # first pass: get t & price events, find out how long session is, get min & max price
     min_price = None
     max_price = None
     first_time_obj = None
     price_events = []
+    time_since_start = 0
     for line in rwd_csv:
-        time = line[1]
+        t = line[1]
         if first_time_obj is None:
-            first_time_obj = datetime.strptime(time, '%H:%M:%S')
-        time_obj = datetime.strptime(time, '%H:%M:%S')
+            first_time_obj = datetime.strptime(t, '%H:%M:%S')
+        time_obj = datetime.strptime(t, '%H:%M:%S')
         price = float(line[2])
         if min_price is None or price < min_price:
             min_price = price
@@ -453,7 +521,7 @@ def get_offset_event_list():
             max_price = price
         time_since_start = (time_obj - first_time_obj).total_seconds()
         price_events.append([time_since_start, price])
-    # second pass: normalise times to fractions of entire time-series duration
+    # second pass: normalise times to fractions of entire t-series duration
     #              & normalise price range
     price_range = max_price - min_price
     end_time = float(time_since_start)
@@ -479,9 +547,9 @@ if __name__ == "__main__":
         sys.exit()
 
     # Input configuration
-    fromConfig = False
+    from_config = False
     useCSV = False
-    useCommandLine = False
+    use_command_line = False
 
     num_zic = config.numZIC
     num_zip = config.numZIP
@@ -490,13 +558,13 @@ if __name__ == "__main__":
     num_gvwy = config.numGVWY
     num_shvr = config.numSHVR
 
-    numOfArgs = len(sys.argv)
-    if numOfArgs == 1:
-        fromConfig = True
-    elif numOfArgs == 2:
+    num_of_args = len(sys.argv)
+    if num_of_args == 1:
+        from_config = True
+    elif num_of_args == 2:
         useCSV = True
-    elif numOfArgs == 7:
-        useCommandLine = True
+    elif num_of_args == 7:
+        use_command_line = True
         try:
             num_zic = int(sys.argv[1])
             num_zip = int(sys.argv[2])
@@ -507,8 +575,8 @@ if __name__ == "__main__":
         except ValueError:
             print("ERROR: Invalid trader schedule. Please enter six integer values.")
             sys.exit()
-        except:
-            print("ERROR: Unknown input error.")
+        except Exception as e:
+            print("ERROR: Unknown input error." + str(e))
             sys.exit()
     else:
         print("Invalid input arguements.")
@@ -526,7 +594,7 @@ if __name__ == "__main__":
     # This section of code allows for the same order and trader schedules
     # to be tested config.numTrials times.
 
-    if fromConfig or useCommandLine:
+    if from_config or use_command_line:
 
         order_sched = get_order_schedule()
 
@@ -537,8 +605,8 @@ if __name__ == "__main__":
         sellers_spec = buyers_spec
         traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
 
-        fname = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (num_zic, num_zip, num_gdx, num_aa, num_gvwy, num_shvr)
-        tdump = open(fname, 'w')
+        file_name = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (num_zic, num_zip, num_gdx, num_aa, num_gvwy, num_shvr)
+        tdump = open(file_name, 'w')
 
         trader_count = 0
         for ttype in buyers_spec:
@@ -557,7 +625,7 @@ if __name__ == "__main__":
 
         while trial < (config.numTrials + 1):
             trial_id = 'trial%07d' % trial
-            start_event = threading.Event()
+            start_session_event = threading.Event()
             try:
                 num_threads = market_session(
                     trial_id,
@@ -565,16 +633,18 @@ if __name__ == "__main__":
                     config.virtualSessionLength,
                     traders_spec,
                     order_sched,
-                    start_event,
+                    start_session_event,
                     False)
 
                 if num_threads != trader_count + 2:
                     trial = trial - 1
-                    start_event.clear()
+                    start_session_event.clear()
                     time.sleep(0.5)
-            except:
+            except Exception as e:
+                print("Error: Market session failed, trying again.")
+                print(e)
                 trial = trial - 1
-                start_event.clear()
+                start_session_event.clear()
                 time.sleep(0.5)
             tdump.flush()
             trial = trial + 1
@@ -601,8 +671,11 @@ if __name__ == "__main__":
         except FileNotFoundError:
             print("ERROR: File " + server + " not found.")
             sys.exit()
-        except:
-            print("ERROR: Unknown file reader error.")
+        except IOError as e:
+            print("ERROR: " + e)
+            sys.exit()
+        except Exception as e:
+            print(e)
             sys.exit()
 
         trial_number = 1
@@ -618,8 +691,8 @@ if __name__ == "__main__":
                 print("ERROR: Invalid trader schedule. Please enter six, comma-separated, integer values. Skipping "
                       "this trader schedule.")
                 continue
-            except:
-                print("ERROR: Unknown input error. Skipping this trader schedule.")
+            except Exception as e:
+                print("ERROR: Unknown input error. Skipping this trader schedule." + str(e))
                 continue
 
             if num_zic < 0 or num_zip < 0 or num_gdx < 0 or num_aa < 0 or num_gvwy < 0 or num_shvr < 0:
@@ -627,8 +700,8 @@ if __name__ == "__main__":
                       " schedule.")
                 continue
 
-            fname = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (num_zic, num_zip, num_gdx, num_aa, num_gvwy, num_shvr)
-            tdump = open(fname, 'w')
+            file_name = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (num_zic, num_zip, num_gdx, num_aa, num_gvwy, num_shvr)
+            tdump = open(file_name, 'w')
 
             for _ in range(0, config.numSchedulesPerRatio):
 
@@ -653,24 +726,25 @@ if __name__ == "__main__":
                 trial = 1
                 while trial <= config.numTrialsPerSchedule:
                     trial_id = 'trial%07d' % trial_number
-                    start_event = threading.Event()
+                    start_session_event = threading.Event()
                     try:
                         num_threads = market_session(trial_id,
                                                      config.sessionLength,
                                                      config.virtualSessionLength,
                                                      traders_spec,
                                                      order_sched,
-                                                     start_event,
+                                                     start_session_event,
                                                      False)
                         if num_threads != trader_count + 2:
                             trial = trial - 1
                             trial_number = trial_number - 1
-                            start_event.clear()
+                            start_session_event.clear()
                             time.sleep(0.5)
-                    except:
+                    except Exception as e:
+                        print("Market session failed. Trying again. " + str(e))
                         trial = trial - 1
                         trial_number = trial_number - 1
-                        start_event.clear()
+                        start_session_event.clear()
                         time.sleep(0.5)
                     tdump.flush()
                     trial = trial + 1
