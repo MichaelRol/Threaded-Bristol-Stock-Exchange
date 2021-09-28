@@ -1,3 +1,4 @@
+"""Module containing all trader algos"""
 import math
 import random
 import sys
@@ -30,8 +31,16 @@ class Trader:
                % (self.tid, self.ttype, self.balance, self.blotter, self.orders, self.n_trades, self.profit_per_time)
 
     def add_order(self, order, verbose):
-        # in this version, trader has at most one order,
-        # if allow more than one, this needs to be self.orders.append(order)
+        """
+        Adds an order to the traders list of orders
+        in this version, trader has at most one order,
+        if allow more than one, this needs to be self.orders.append(order)
+        :param order: the order to be added
+        :param verbose: should verbose logging be printed to console
+        :return: Response: "Proceed" if no current offer on LOB, "LOB_Cancel" if there is an order on the LOB needing
+                 cancelled.\
+        """
+
         if self.n_quotes > 0:
             # this trader has a live quote on the LOB, from a previous customer order
             # need response to signal cancellation/withdrawal of that quote
@@ -45,13 +54,23 @@ class Trader:
         return response
 
     def del_order(self, coid):
+        """
+        Removes current order from traders list of orders
+        :param coid: Customer order ID of order to be deleted
+        """
         # this is lazy: assumes each trader has only one customer order with quantity=1, so deleting sole order
         # CHANGE TO DELETE THE HEAD OF THE LIST AND KEEP THE TAIL
         self.orders.pop(coid)
 
     def bookkeep(self, trade, order, verbose, time):
-
-        outstr = ""
+        """
+        Updates trader's internal stats with trade and order
+        :param trade: Trade that has been executed
+        :param order: Order trade was in response to
+        :param verbose: Should verbose logging be printed to console
+        :param time: Current time
+        """
+        output_string = ""
 
         if trade['coid'] in self.orders:
             coid = trade['coid']
@@ -83,24 +102,46 @@ class Trader:
             sys.exit()
 
         if verbose:
-            print('%s profit=%d balance=%d profit/t=%d' % (outstr, profit, self.balance, self.profit_per_time))
+            print('%s profit=%d balance=%d profit/t=%d' % (output_string, profit, self.balance, self.profit_per_time))
         self.del_order(coid)  # delete the order
 
-    # specify how trader responds to events in the market
-    # this is a null action, expect it to be overloaded by specific algos
     def respond(self, time, lob, trade, verbose):
+        """
+        specify how trader responds to events in the market
+        this is a null action, expect it to be overloaded by specific algos
+        :param time: Current time
+        :param lob: Limit order book
+        :param trade: Trade being responed to
+        :param verbose: Should verbose logging be printed to console
+        :return: Unused
+        """
         return None
 
     def get_order(self, time, countdown, lob):
+        """
+        Get's the traders order based on the current state of the market
+        :param time: Current time
+        :param countdown: Time to end of session
+        :param lob: Limit order book
+        :return: The order
+        """
         return None
 
 
-# Trader subclass Giveaway
-# even dumber than a ZI-U: just give the deal away
-# (but never makes a loss)
 class TraderGiveaway(Trader):
-
+    """
+    Trader subclass Giveaway
+    even dumber than a ZI-U: just give the deal away
+    (but never makes a loss)
+    """
     def get_order(self, time, countdown, lob):
+        """
+        Get's giveaway traders order - in this case the price is just the limit price from the customer order
+        :param time: Current time
+        :param countdown: Time until end of session
+        :param lob: Limit order book
+        :return: Order to be sent to the exchange
+        """
         if len(self.orders) < 1:
             order = None
         else:
@@ -115,12 +156,17 @@ class TraderGiveaway(Trader):
         return order
 
 
-# Trader subclass ZI-C
-# After Gode & Sunder 1993
 class TraderZic(Trader):
-
+    """ Trader subclass ZI-C
+    After Gode & Sunder 1993"""
     def get_order(self, time, countdown, lob):
-
+        """
+        Gets ZIC trader, limit price is randomly selected
+        :param time: Current time
+        :param countdown: Time until end of current market session
+        :param lob: Limit order book
+        :return: The trader order to be sent to the exchange
+        """
         if len(self.orders) < 1:
             # no orders: return NULL
             order = None
@@ -141,12 +187,18 @@ class TraderZic(Trader):
         return order
 
 
-# Trader subclass Shaver
-# shaves a penny off the best price
-# if there is no best price, creates "stub quote" at system max/min
 class TraderShaver(Trader):
-
+    """Trader subclass Shaver
+    shaves a penny off the best price
+    if there is no best price, creates "stub quote" at system max/min"""
     def get_order(self, time, countdown, lob):
+        """
+        Get's Shaver trader order by shaving/adding a penny to current best bid
+        :param time: Current time
+        :param countdown: Countdown to end of market session
+        :param lob: Limit order book
+        :return: The trader order to be sent to the exchange
+        """
         if len(self.orders) < 1:
             order = None
         else:
@@ -173,13 +225,19 @@ class TraderShaver(Trader):
         return order
 
 
-# Trader subclass Sniper
-# Based on Shaver,
-# "lurks" until t remaining < threshold% of the trading session
-# then gets increasing aggressive, increasing "shave thickness" as t runs out
 class TraderSniper(Trader):
-
+    """
+    Trader subclass Sniper
+    Based on Shaver,
+    "lurks" until t remaining < threshold% of the trading session
+    then gets increasing aggressive, increasing "shave thickness" as t runs out"""
     def get_order(self, time, countdown, lob):
+        """
+        :param time: Current time
+        :param countdown: Time until end of market session
+        :param lob: Limit order book
+        :return: Trader order to be sent to exchange
+        """
         lurk_threshold = 0.2
         shave_growth_rate = 3
         shave = int(1.0 / (0.01 + countdown / (shave_growth_rate * lurk_threshold)))
@@ -243,6 +301,13 @@ class TraderZip(Trader):
         self.prev_best_ask_q = None
 
     def get_order(self, time, countdown, lob):
+        """
+
+        :param time: Current time
+        :param countdown: Time until end of current market session
+        :param lob: Limit order book
+        :return: Trader order to be sent to exchange
+        """
         if len(self.orders) < 1:
             self.active = False
             order = None
@@ -265,13 +330,23 @@ class TraderZip(Trader):
             self.last_quote = order
         return order
 
-    # update margin on basis of what happened in market
     def respond(self, time, lob, trade, verbose):
-        # ZIP trader responds to market events, altering its margin
-        # does this whether it currently has an order to work or not
+        """
+        update margin on basis of what happened in marke
+        ZIP trader responds to market events, altering its margin
+        does this whether it currently has an order to work or not
+        :param time: Current time
+        :param lob: Limit order book
+        :param trade: Trade being responded to
+        :param verbose: Should verbose logging be printed to console
+        """
 
         def target_up(price):
-            # generate a higher target price by randomly perturbing given price
+            """
+            generate a higher target price by randomly perturbing given price
+            :param price: Current price
+            :return: New price target
+            """
             ptrb_abs = self.ca * random.random()  # absolute shift
             ptrb_rel = price * (1.0 + (self.cr * random.random()))  # relative shift
             target = int(round(ptrb_rel + ptrb_abs, 0))
@@ -279,7 +354,11 @@ class TraderZip(Trader):
             return target
 
         def target_down(price):
-            # generate a lower target price by randomly perturbing given price
+            """
+            generate a lower target price by randomly perturbing given price
+            :param price: Current price
+            :return: New price target
+            """
             ptrb_abs = self.ca * random.random()  # absolute shift
             ptrb_rel = price * (1.0 - (self.cr * random.random()))  # relative shift
             target = int(round(ptrb_rel - ptrb_abs, 0))
@@ -287,7 +366,11 @@ class TraderZip(Trader):
             return target
 
         def willing_to_trade(price):
-            # am I willing to trade at this price?
+            """
+            am I willing to trade at this price?
+            :param price: Price to be traded out
+            :return: Is the trader willing to trade
+            """
             willing = False
             if self.job == 'Bid' and self.active and self.price >= price:
                 willing = True
@@ -296,6 +379,10 @@ class TraderZip(Trader):
             return willing
 
         def profit_alter(price):
+            """
+            Update target profit margin
+            :param price: New target profit margin
+            """
             old_price = self.price
             diff = price - old_price
             change = ((1.0 - self.momentum) * (self.beta * diff)) + (self.momentum * self.prev_change)

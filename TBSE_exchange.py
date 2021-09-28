@@ -1,13 +1,17 @@
+""""
+Module containing classes for describing a simulated exchange
+
+Minor adaptions from the original BSE code by Dave Cliff
+"""
 import sys
 
 from TBSE_sys_consts import tbse_sys_min_price, tbse_sys_max_price
 
 
-# Minor adaptations from original BSE code by Dave Cliff
-
-# OrderbookHalf is one side of the book: a list of bids or a list of asks, each sorted best-first
 class OrderbookHalf:
-
+    """
+    OrderbookHalf is one side of the book: a list of bids or a list of asks, each sorted best-first
+    """
     def __init__(self, book_type, worst_price):
         # book_type: bids or asks?
         self.book_type = book_type
@@ -25,19 +29,23 @@ class OrderbookHalf:
         self.lob_depth = 0  # how many different prices on lob?
 
     def anonymize_lob(self):
-        # anonymize a lob, strip out order details, format as a sorted list
-        # NB for asks, the sorting should be reversed
+        """
+        anonymize a lob, strip out order details, format as a sorted list
+        NB for asks, the sorting should be reversed
+        """
         self.lob_anon = []
         for price in list(sorted(self.lob)):
             qty = self.lob[price][0]
             self.lob_anon.append([price, qty])
 
     def build_lob(self):
+        """"
+        take a list of orders and build a limit-order-book (lob) from it
+        NB the exchange needs to know arrival times and trader-id associated with each order
+        returns lob as a dictionary (i.e., unsorted)
+        also builds anonymized version (just price/quantity, sorted, as a list) for publishing to traders
+        """
         lob_verbose = False
-        # take a list of orders and build a limit-order-book (lob) from it
-        # NB the exchange needs to know arrival times and trader-id associated with each order
-        # returns lob as a dictionary (i.e., unsorted)
-        # also builds anonymized version (just price/quantity, sorted, as a list) for publishing to traders
         self.lob = {}
 
         for tid in list(self.orders):
@@ -70,11 +78,13 @@ class OrderbookHalf:
             print(self.lob)
 
     def book_add(self, order):
-        # add order to the dictionary holding the list of orders
-        # either overwrites old order from this trader
-        # or dynamically creates new entry in the dictionary
-        # so, max of one order per trader per list
-        # checks whether length or order list has changed, to distinguish addition/overwrite
+        """
+        add order to the dictionary holding the list of orders
+        either overwrites old order from this trader
+        or dynamically creates new entry in the dictionary
+        so, max of one order per trader per list
+        checks whether length or order list has changed, to distinguish addition/overwrite
+        """
 
         n_orders = self.n_orders
         self.orders[order.tid] = order
@@ -87,9 +97,12 @@ class OrderbookHalf:
             return 'Overwrite'
 
     def book_del(self, order):
-        # delete order from the dictionary holding the orders
-        # assumes max of one order per trader per list
-        # checks that the Trader ID does actually exist in the dict before deletion
+        """
+        delete order from the dictionary holding the orders
+        assumes max of one order per trader per list
+        checks that the Trader ID does actually exist in the dict before deletion
+        :param order: Order to be deleted
+        """
 
         if self.orders.get(order.tid) is not None:
             del (self.orders[order.tid])
@@ -97,8 +110,11 @@ class OrderbookHalf:
             self.build_lob()
 
     def delete_best(self):
-        # delete order: when the best bid/ask has been hit, delete it from the book
-        # the TraderID of the deleted order is return-value, as counterparty to the trade
+        """
+        delete order: when the best bid/ask has been hit, delete it from the book
+        the TraderID of the deleted order is return-value, as counterparty to the trade
+        :return: Trader ID of the counterparty to the trade
+        """
         best_price_orders = self.lob[self.best_price]
         best_price_qty = best_price_orders[0]
         best_price_counterparty = best_price_orders[1][0][2]
@@ -128,9 +144,10 @@ class OrderbookHalf:
         return best_price_counterparty
 
 
-# Orderbook for a single instrument: list of bids and list of asks
-
 class Orderbook:
+    """
+    Orderbook for a single instrument: list of bids and list of asks
+    """
 
     def __init__(self):
         self.bids = OrderbookHalf('Bid', tbse_sys_min_price)
@@ -139,12 +156,17 @@ class Orderbook:
         self.quote_id = 0  # unique ID code for each quote accepted onto the book
 
 
-# Exchange's internal orderbook
-
 class Exchange(Orderbook):
-
+    """
+    Exchange's internal orderbook
+    """
     def add_order(self, order, verbose):
-        # add a quote/order to the exchange and update all internal records; return unique i.d.
+        """
+        add a quote/order to the exchange and update all internal records; return unique i.d.
+        :param order: order to be added to the exchange
+        :param verbose: should verbose logging be printed to console
+        :return: List containing order trader ID and the response from the OrderbookHalf (Either addition or overwrite)
+        """
         order.toid = self.quote_id
         self.quote_id = order.toid + 1
 
@@ -231,8 +253,15 @@ class Exchange(Orderbook):
         return public_data
 
     def process_order2(self, time, order, verbose):
-        # receive an order and either add it to the relevant LOB (ie treat as limit order)
-        # or if it crosses the best counterparty offer, execute it (treat as a market order)
+        """
+        receive an order and either add it to the relevant LOB (ie treat as limit order)
+        or if it crosses the best counterparty offer, execute it (treat as a market order)
+
+        :param time: Current time
+        :param order: Order being processed
+        :param verbose: Should verbose logging be printed to the console
+        :return: transaction record and updated LOB
+        """
         o_price = order.price
         counterparty = None
         counter_coid = None
@@ -245,6 +274,7 @@ class Exchange(Orderbook):
         best_ask_tid = self.asks.best_tid
         best_bid = self.bids.best_price
         best_bid_tid = self.bids.best_tid
+        price = 0
         if order.otype == 'Bid':
             if self.asks.n_orders > 0 and best_bid >= best_ask:
                 # bid lifts the best ask
@@ -302,11 +332,17 @@ class Exchange(Orderbook):
         else:
             return None, lob
 
-    def tape_dump(self, fname, fmode, tmode):
-        dumpfile = open(fname, fmode)
+    def tape_dump(self, file_name, file_mode, tape_mode):
+        """
+        Dumps current tape to file
+        :param file_name: Name of file to dump tape to
+        :param file_mode: mode by which to access file (R / R/W / W)
+        :param tape_mode: Should tape be wiped after dump
+        """
+        dumpfile = open(file_name, file_mode)
         for tape_item in self.tape:
             if tape_item['type'] == 'Trade':
                 dumpfile.write('%s, %s\n' % (tape_item['t'], tape_item['price']))
         dumpfile.close()
-        if tmode == 'wipe':
+        if tape_mode == 'wipe':
             self.tape = []
