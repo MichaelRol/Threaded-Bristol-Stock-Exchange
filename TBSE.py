@@ -111,20 +111,19 @@ def populate_market(trader_spec, traders, shuffle, verbose):
         """
         if robot_type == 'GVWY':
             return TraderGiveaway('GVWY', name, 0.00, 0)
-        elif robot_type == 'ZIC':
+        if robot_type == 'ZIC':
             return TraderZic('ZIC', name, 0.00, 0)
-        elif robot_type == 'SHVR':
+        if robot_type == 'SHVR':
             return TraderShaver('SHVR', name, 0.00, 0)
-        elif robot_type == 'SNPR':
+        if robot_type == 'SNPR':
             return TraderSniper('SNPR', name, 0.00, 0)
-        elif robot_type == 'ZIP':
+        if robot_type == 'ZIP':
             return TraderZip('ZIP', name, 0.00, 0)
-        elif robot_type == 'AA':
+        if robot_type == 'AA':
             return TraderAa('AA', name, 0.00, 0)
-        elif robot_type == 'GDX':
+        if robot_type == 'GDX':
             return TraderGdx('GDX', name, 0.00, 0)
-        else:
-            sys.exit('FATAL: don\'t know robot type %s\n' % robot_type)
+        sys.exit('FATAL: don\'t know robot type %s\n' % robot_type)
 
     def shuffle_traders(ttype_char, n, trader_list):
         """
@@ -547,31 +546,31 @@ if __name__ == "__main__":
         sys.exit()
 
     # Input configuration
-    from_config = False
-    useCSV = False
-    use_command_line = False
+    USE_CONFIG = False
+    USE_CSV = False
+    USE_COMMAND_LINE = False
 
-    num_zic = config.numZIC
-    num_zip = config.numZIP
-    num_gdx = config.numGDX
-    num_aa = config.numAA
-    num_gvwy = config.numGVWY
-    num_shvr = config.numSHVR
+    NUM_ZIC = config.numZIC
+    NUM_ZIP = config.numZIP
+    NUM_GDX = config.numGDX
+    NUM_AA = config.numAA
+    NUM_GVWY = config.numGVWY
+    NUM_SHVR = config.numSHVR
 
     num_of_args = len(sys.argv)
     if num_of_args == 1:
-        from_config = True
+        USE_CONFIG = True
     elif num_of_args == 2:
-        useCSV = True
+        USE_CSV = True
     elif num_of_args == 7:
-        use_command_line = True
+        USE_COMMAND_LINE = True
         try:
-            num_zic = int(sys.argv[1])
-            num_zip = int(sys.argv[2])
-            num_gdx = int(sys.argv[3])
-            num_aa = int(sys.argv[4])
-            num_gvwy = int(sys.argv[5])
-            num_shvr = int(sys.argv[6])
+            NUM_ZIC = int(sys.argv[1])
+            NUM_ZIP = int(sys.argv[2])
+            NUM_GDX = int(sys.argv[3])
+            NUM_AA = int(sys.argv[4])
+            NUM_GVWY = int(sys.argv[5])
+            NUM_SHVR = int(sys.argv[6])
         except ValueError:
             print("ERROR: Invalid trader schedule. Please enter six integer values.")
             sys.exit()
@@ -587,25 +586,25 @@ if __name__ == "__main__":
         schedule.")
         sys.exit()
 
-    if num_zic < 0 or num_zip < 0 or num_gdx < 0 or num_aa < 0 or num_gvwy < 0 or num_shvr < 0:
+    if NUM_ZIC < 0 or NUM_ZIP < 0 or NUM_GDX < 0 or NUM_AA < 0 or NUM_GVWY < 0 or NUM_SHVR < 0:
         print("ERROR: Invalid trader schedule. All input integers should be positive.")
         sys.exit()
 
     # This section of code allows for the same order and trader schedules
     # to be tested config.numTrials times.
 
-    if from_config or use_command_line:
+    if USE_CONFIG or USE_COMMAND_LINE:
 
         order_sched = get_order_schedule()
 
-        buyers_spec = [('ZIC', num_zic), ('ZIP', num_zip),
-                       ('GDX', num_gdx), ('AA', num_aa),
-                       ('GVWY', num_gvwy), ('SHVR', num_shvr)]
+        buyers_spec = [('ZIC', NUM_ZIC), ('ZIP', NUM_ZIP),
+                       ('GDX', NUM_GDX), ('AA', NUM_AA),
+                       ('GVWY', NUM_GVWY), ('SHVR', NUM_SHVR)]
 
         sellers_spec = buyers_spec
         traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
 
-        file_name = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (num_zic, num_zip, num_gdx, num_aa, num_gvwy, num_shvr)
+        file_name = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (NUM_ZIC, NUM_ZIP, NUM_GDX, NUM_AA, NUM_GVWY, NUM_SHVR)
         tdump = open(file_name, 'w')
 
         trader_count = 0
@@ -660,7 +659,7 @@ if __name__ == "__main__":
     # 5 Shaver traders. To have different buyer and seller specs modifications
     # would be needed.
 
-    elif useCSV:
+    elif USE_CSV:
         server = sys.argv[1]
         ratios = []
         try:
@@ -681,12 +680,12 @@ if __name__ == "__main__":
         trial_number = 1
         for ratio in ratios:
             try:
-                num_zic = int(ratio[0])
-                num_zip = int(ratio[1])
-                num_gdx = int(ratio[2])
-                num_aa = int(ratio[3])
-                num_gvwy = int(ratio[4])
-                num_shvr = int(ratio[5])
+                NUM_ZIC = int(ratio[0])
+                NUM_ZIP = int(ratio[1])
+                NUM_GDX = int(ratio[2])
+                NUM_AA = int(ratio[3])
+                NUM_GVWY = int(ratio[4])
+                NUM_SHVR = int(ratio[5])
             except ValueError:
                 print("ERROR: Invalid trader schedule. Please enter six, comma-separated, integer values. Skipping "
                       "this trader schedule.")
@@ -695,21 +694,21 @@ if __name__ == "__main__":
                 print("ERROR: Unknown input error. Skipping this trader schedule." + str(e))
                 continue
 
-            if num_zic < 0 or num_zip < 0 or num_gdx < 0 or num_aa < 0 or num_gvwy < 0 or num_shvr < 0:
+            if NUM_ZIC < 0 or NUM_ZIP < 0 or NUM_GDX < 0 or NUM_AA < 0 or NUM_GVWY < 0 or NUM_SHVR < 0:
                 print("ERROR: Invalid trader schedule. All input integers should be positive. Skipping this trader"
                       " schedule.")
                 continue
 
-            file_name = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (num_zic, num_zip, num_gdx, num_aa, num_gvwy, num_shvr)
+            file_name = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (NUM_ZIC, NUM_ZIP, NUM_GDX, NUM_AA, NUM_GVWY, NUM_SHVR)
             tdump = open(file_name, 'w')
 
             for _ in range(0, config.numSchedulesPerRatio):
 
                 order_sched = get_order_schedule()
 
-                buyers_spec = [('ZIC', num_zic), ('ZIP', num_zip),
-                               ('GDX', num_gdx), ('AA', num_aa),
-                               ('GVWY', num_gvwy), ('SHVR', num_shvr)]
+                buyers_spec = [('ZIC', NUM_ZIC), ('ZIP', NUM_ZIP),
+                               ('GDX', NUM_GDX), ('AA', NUM_AA),
+                               ('GVWY', NUM_GVWY), ('SHVR', NUM_SHVR)]
 
                 sellers_spec = buyers_spec
                 traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
