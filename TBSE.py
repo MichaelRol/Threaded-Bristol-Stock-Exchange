@@ -68,7 +68,7 @@ def trade_stats(expid, traders, dumpfile):
     trader_types = {}
     for t in traders:
         trader_type = traders[t].ttype
-        if trader_type in trader_types.keys():
+        if trader_type in trader_types:
             t_balance = trader_types[trader_type]['balance_sum'] + traders[t].balance
             t_trades = trader_types[trader_type]['trades_sum'] + traders[t].n_trades
             t_time1 = trader_types[trader_type]['time1'] + traders[t].times[0] / traders[t].times[2]
@@ -83,16 +83,15 @@ def trade_stats(expid, traders, dumpfile):
         trader_types[trader_type] = {'n': n, 'balance_sum': t_balance, 'trades_sum': t_trades, 'time1': t_time1,
                                      'time2': t_time2}
 
-    # dumpfile.write('%s, %06d, ' % (expid, t))
-    dumpfile.write('%s, ' % expid)
+    dumpfile.write(f"{expid}")
     for trader_type in sorted(list(trader_types.keys())):
         n = trader_types[trader_type]['n']
         s = trader_types[trader_type]['balance_sum']
         t = trader_types[trader_type]['trades_sum']
         time1 = trader_types[trader_type]['time1']
         time2 = trader_types[trader_type]['time2']
-        dumpfile.write('%s, %d, %d, %f, %f, %f, %f, ' % (
-            trader_type, s, n, s / float(n), t / float(n), time1 / float(n), time2 / float(n)))
+        dumpfile.write(f"{trader_type}, {s}, {n}, {s / float(n)}, "
+                       f"{t / float(n)}, {time1 / float(n)}, {time2 / float(n)}")
 
     dumpfile.write('\n')
 
@@ -123,7 +122,7 @@ def populate_market(trader_spec, traders, shuffle, verbose):
             return TraderAa('AA', name, 0.00, 0)
         if robot_type == 'GDX':
             return TraderGdx('GDX', name, 0.00, 0)
-        sys.exit('FATAL: don\'t know robot type %s\n' % robot_type)
+        sys.exit(f'FATAL: don\'t know robot type {robot_type}\n')
 
     def shuffle_traders(ttype_char, n, trader_list):
         """
@@ -135,8 +134,8 @@ def populate_market(trader_spec, traders, shuffle, verbose):
         for swap in range(n):
             t1 = (n - 1) - swap
             t2 = random.randint(0, t1)
-            t1name = '%c%02d' % (ttype_char, t1)
-            t2name = '%c%02d' % (ttype_char, t2)
+            t1name = f"{ttype_char}{str(t1).zfill(2)}"
+            t2name = f"{ttype_char}{str(t2).zfill(2)}"
             trader_list[t1name].tid = t2name
             trader_list[t2name].tid = t1name
             temp = trader_list[t1name]
@@ -147,8 +146,8 @@ def populate_market(trader_spec, traders, shuffle, verbose):
     for bs in trader_spec['buyers']:
         trader_type = bs[0]
         for _ in range(bs[1]):
-            tname = 'B%02d' % n_buyers  # buyer i.d. string
-            traders[tname] = create_trader(trader_type, tname)
+            trader_name = f"B{str(n_buyers).zfill(2)}"  # buyer i.d. string
+            traders[trader_name] = create_trader(trader_type, trader_name)
             n_buyers = n_buyers + 1
 
     if n_buyers < 1:
@@ -161,8 +160,8 @@ def populate_market(trader_spec, traders, shuffle, verbose):
     for ss in trader_spec['sellers']:
         trader_type = ss[0]
         for _ in range(ss[1]):
-            tname = 'S%02d' % n_sellers  # buyer i.d. string
-            traders[tname] = create_trader(trader_type, tname)
+            trader_name = f"S{str(n_sellers).zfill(2)}"  # buyer i.d. string
+            traders[trader_name] = create_trader(trader_type, trader_name)
             n_sellers = n_sellers + 1
 
     if n_sellers < 1:
@@ -173,10 +172,10 @@ def populate_market(trader_spec, traders, shuffle, verbose):
 
     if verbose:
         for t in range(n_buyers):
-            bname = 'B%02d' % t
+            bname = f"B{str(t).zfill(2)}"
             print(traders[bname])
         for t in range(n_sellers):
-            bname = 'S%02d' % t
+            bname = f"S{str(t).zfill(2)}"
             print(traders[bname])
 
     return {'n_buyers': n_buyers, 'n_sellers': n_sellers}
@@ -374,7 +373,7 @@ def market_session(
     pending_cust_orders = []
 
     if verbose:
-        print('\n%s;  ' % sess_id)
+        print(f'\n{sess_id};  ')
 
     cuid = 0  # Customer order id
 
@@ -386,17 +385,16 @@ def market_session(
         # if any newly-issued customer orders mean quotes on the LOB need to be cancelled, kill them
         if len(kills) > 0:
             if verbose:
-                print('Kills: %s' % kills)
+                print(f'Kills: {kills}')
             for kill in kills:
                 if verbose:
-                    print('last_quote=%s' % traders[kill].last_quote)
+                    print(f'last_quote={traders[kill].last_quote}')
                 if traders[kill].last_quote is not None:
                     kill_q.put(traders[kill].last_quote)
                     if verbose:
-                        print('Killing order %s' % (str(traders[kill].last_quote)))
+                        print(f'Killing order {str(traders[kill].last_quote)}')
         time.sleep(0.01)
 
-    # print("QUEUE: " + str(order_q.qsize()))
     start_event.clear()
     len_threads = len(threading.enumerate())
 
@@ -500,7 +498,7 @@ def get_offset_event_list():
     :return: list of offset events
     """
 
-    rwd_csv = csv.reader(open(config.input_file, 'r'))
+    rwd_csv = csv.reader(open(config.input_file, 'r', encoding="utf-8"))
     scale_factor = 80
     # first pass: get t & price events, find out how long session is, get min & max price
     min_price = None
@@ -557,12 +555,12 @@ if __name__ == "__main__":
     NUM_GVWY = config.numGVWY
     NUM_SHVR = config.numSHVR
 
-    num_of_args = len(sys.argv)
-    if num_of_args == 1:
+    NUM_OF_ARGS = len(sys.argv)
+    if NUM_OF_ARGS == 1:
         USE_CONFIG = True
-    elif num_of_args == 2:
+    elif NUM_OF_ARGS == 2:
         USE_CSV = True
-    elif num_of_args == 7:
+    elif NUM_OF_ARGS == 7:
         USE_COMMAND_LINE = True
         try:
             NUM_ZIC = int(sys.argv[1])
@@ -604,8 +602,9 @@ if __name__ == "__main__":
         sellers_spec = buyers_spec
         traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
 
-        file_name = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (NUM_ZIC, NUM_ZIP, NUM_GDX, NUM_AA, NUM_GVWY, NUM_SHVR)
-        tdump = open(file_name, 'w')
+        file_name = f"{str(NUM_ZIC).zfill(2)}-{str(NUM_ZIP).zfill(2)}-{str(NUM_GDX).zfill(2)}-" \
+                    f"{str(NUM_AA).zfill(2)}-{str(NUM_GVWY).zfill(2)}-{str(NUM_SHVR).zfill(2)}.csv"
+        tdump = open(file_name, 'w', encoding="utf-8")
 
         trader_count = 0
         for ttype in buyers_spec:
@@ -623,10 +622,10 @@ if __name__ == "__main__":
             dump_all = True
 
         while trial < (config.numTrials + 1):
-            trial_id = 'trial%07d' % trial
+            trial_id = f'trial{str(trial).zfill(7)}'
             start_session_event = threading.Event()
             try:
-                num_threads = market_session(
+                NUM_THREADS = market_session(
                     trial_id,
                     config.sessionLength,
                     config.virtualSessionLength,
@@ -635,7 +634,7 @@ if __name__ == "__main__":
                     start_session_event,
                     False)
 
-                if num_threads != trader_count + 2:
+                if NUM_THREADS != trader_count + 2:
                     trial = trial - 1
                     start_session_event.clear()
                     time.sleep(0.5)
@@ -663,8 +662,8 @@ if __name__ == "__main__":
         server = sys.argv[1]
         ratios = []
         try:
-            with open(server, newline='') as csvfile:
-                reader = csv.reader(csvfile, delimiter=',')
+            with open(server, newline='', encoding="utf-8") as csv_file:
+                reader = csv.reader(csv_file, delimiter=',')
                 for row in reader:
                     ratios.append(row)
         except FileNotFoundError:
@@ -699,59 +698,59 @@ if __name__ == "__main__":
                       " schedule.")
                 continue
 
-            file_name = '%02d-%02d-%02d-%02d-%02d-%02d.csv' % (NUM_ZIC, NUM_ZIP, NUM_GDX, NUM_AA, NUM_GVWY, NUM_SHVR)
-            tdump = open(file_name, 'w')
+            file_name = f"{str(NUM_ZIC).zfill(2)}-{str(NUM_ZIP).zfill(2)}-{str(NUM_GDX).zfill(2)}-" \
+                        f"{str(NUM_AA).zfill(2)}-{str(NUM_GVWY).zfill(2)}-{str(NUM_SHVR).zfill(2)}.csv"
+            with open(file_name, 'w') as tdump:
 
-            for _ in range(0, config.numSchedulesPerRatio):
+                for _ in range(0, config.numSchedulesPerRatio):
 
-                order_sched = get_order_schedule()
+                    order_sched = get_order_schedule()
 
-                buyers_spec = [('ZIC', NUM_ZIC), ('ZIP', NUM_ZIP),
-                               ('GDX', NUM_GDX), ('AA', NUM_AA),
-                               ('GVWY', NUM_GVWY), ('SHVR', NUM_SHVR)]
+                    buyers_spec = [('ZIC', NUM_ZIC), ('ZIP', NUM_ZIP),
+                                   ('GDX', NUM_GDX), ('AA', NUM_AA),
+                                   ('GVWY', NUM_GVWY), ('SHVR', NUM_SHVR)]
 
-                sellers_spec = buyers_spec
-                traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
+                    sellers_spec = buyers_spec
+                    traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
 
-                trader_count = 0
-                for ttype in buyers_spec:
-                    trader_count += ttype[1]
-                for ttype in sellers_spec:
-                    trader_count += ttype[1]
+                    trader_count = 0
+                    for ttype in buyers_spec:
+                        trader_count += ttype[1]
+                    for ttype in sellers_spec:
+                        trader_count += ttype[1]
 
-                if trader_count > 40:
-                    print("WARNING: Too many traders can cause unstable behaviour.")
+                    if trader_count > 40:
+                        print("WARNING: Too many traders can cause unstable behaviour.")
 
-                trial = 1
-                while trial <= config.numTrialsPerSchedule:
-                    trial_id = 'trial%07d' % trial_number
-                    start_session_event = threading.Event()
-                    try:
-                        num_threads = market_session(trial_id,
-                                                     config.sessionLength,
-                                                     config.virtualSessionLength,
-                                                     traders_spec,
-                                                     order_sched,
-                                                     start_session_event,
-                                                     False)
-                        if num_threads != trader_count + 2:
+                    trial = 1
+                    while trial <= config.numTrialsPerSchedule:
+                        trial_id = f'trial{str(trial_number).zfill(7)}'
+                        start_session_event = threading.Event()
+                        try:
+                            NUM_THREADS = market_session(trial_id,
+                                                         config.sessionLength,
+                                                         config.virtualSessionLength,
+                                                         traders_spec,
+                                                         order_sched,
+                                                         start_session_event,
+                                                         False)
+                            if NUM_THREADS != trader_count + 2:
+                                trial = trial - 1
+                                trial_number = trial_number - 1
+                                start_session_event.clear()
+                                time.sleep(0.5)
+                        except Exception as e:
+                            print("Market session failed. Trying again. " + str(e))
                             trial = trial - 1
                             trial_number = trial_number - 1
                             start_session_event.clear()
                             time.sleep(0.5)
-                    except Exception as e:
-                        print("Market session failed. Trying again. " + str(e))
-                        trial = trial - 1
-                        trial_number = trial_number - 1
-                        start_session_event.clear()
-                        time.sleep(0.5)
-                    tdump.flush()
-                    trial = trial + 1
-                    trial_number = trial_number + 1
-            tdump.close()
+                        tdump.flush()
+                        trial = trial + 1
+                        trial_number = trial_number + 1
 
         sys.exit('Done Now')
 
     else:
-        print("ERROR: An unknown error has occured. Something is very wrong.")
+        print("ERROR: An unknown error has occurred. Something is very wrong.")
         sys.exit()

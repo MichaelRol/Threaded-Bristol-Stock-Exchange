@@ -1,3 +1,4 @@
+# pylint: skip-file
 """-*- coding: utf-8 -*-
 
 BSE: The Bristol Stock Exchange
@@ -7,7 +8,6 @@ Version 1.3; July 21st, 2018.
 Version 1.2; November 17th, 2012.
 
 Copyright (c) 2012-2018, Dave Cliff
-
 
 ------------------------
 
@@ -28,9 +28,6 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------
-
-pylint: skip-file
-
 
 BSE is a very simple simulation of automated execution traders
 operating on a very simple model of a limit order book (LOB) exchange
