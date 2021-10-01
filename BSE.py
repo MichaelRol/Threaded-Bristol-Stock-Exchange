@@ -1459,11 +1459,11 @@ def populate_market(traders_spec, traders, shuffle, verbose):
 
 
 # customer_orders(): allocate orders to traders
-# parameter "os" is order schedule
-# os['timemode'] is either 'periodic', 'drip-fixed', 'drip-jitter', or 'drip-poisson'
-# os['interval'] is number of seconds for a full cycle of replenishment
+# parameter "order_sched" is order schedule
+# order_sched['timemode'] is either 'periodic', 'drip-fixed', 'drip-jitter', or 'drip-poisson'
+# order_sched['interval'] is number of seconds for a full cycle of replenishment
 # drip-poisson sequences will be normalised to ensure t of last replenishment <= interval
-# parameter "pending" is the list of future orders (if this is empty, generates a new one from os)
+# parameter "pending" is the list of future orders (if this is empty, generates a new one from order_sched)
 # revised "pending" is the returned value
 #
 # also returns a list of "cancellations": trader-ids for those traders who are now working a new order and hence
@@ -1615,7 +1615,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
                 got_one = True
                 exit  # jump out the loop -- so the first matching timezone has priority over any others
         if not got_one:
-            sys.exit('Fail: t=%5.2f not within any timezone in os=%s' % (time, os))
+            sys.exit('Fail: t=%5.2f not within any timezone in order_sched=%s' % (time, os))
         return (schedrange, mode, sched_end_time)
 
     n_buyers = trader_stats['n_buyers']

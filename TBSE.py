@@ -1,3 +1,4 @@
+# pylint: disable=C0103
 """-*- coding: utf-8 -*-
 
 TBSE: The Threaded Bristol Stock Exchange
@@ -497,43 +498,43 @@ def get_offset_event_list():
     assumes data file is all for one date, sorted in t order, in correct format, etc. etc.
     :return: list of offset events
     """
-
-    rwd_csv = csv.reader(open(config.input_file, 'r', encoding="utf-8"))
-    scale_factor = 80
-    # first pass: get t & price events, find out how long session is, get min & max price
-    min_price = None
-    max_price = None
-    first_time_obj = None
-    price_events = []
-    time_since_start = 0
-    for line in rwd_csv:
-        t = line[1]
-        if first_time_obj is None:
-            first_time_obj = datetime.strptime(t, '%H:%M:%S')
-        time_obj = datetime.strptime(t, '%H:%M:%S')
-        price = float(line[2])
-        if min_price is None or price < min_price:
-            min_price = price
-        if max_price is None or price > max_price:
-            max_price = price
-        time_since_start = (time_obj - first_time_obj).total_seconds()
-        price_events.append([time_since_start, price])
-    # second pass: normalise times to fractions of entire t-series duration
-    #              & normalise price range
-    price_range = max_price - min_price
-    end_time = float(time_since_start)
-    offset_function_event_list = []
-    for event in price_events:
-        # normalise price
-        normld_price = (event[1] - min_price) / price_range
-        # clip
-        normld_price = min(normld_price, 1.0)
-        normld_price = max(0.0, normld_price)
-        # scale & convert to integer cents
-        price = int(round(normld_price * scale_factor))
-        normld_event = [event[0] / end_time, price]
-        offset_function_event_list.append(normld_event)
-    return offset_function_event_list
+    with open(config.input_file, 'r', encoding="utf-8") as input_file:
+        rwd_csv = csv.reader(input_file)
+        scale_factor = 80
+        # first pass: get t & price events, find out how long session is, get min & max price
+        min_price = None
+        max_price = None
+        first_time_obj = None
+        price_events = []
+        time_since_start = 0
+        for line in rwd_csv:
+            t = line[1]
+            if first_time_obj is None:
+                first_time_obj = datetime.strptime(t, '%H:%M:%S')
+            time_obj = datetime.strptime(t, '%H:%M:%S')
+            price = float(line[2])
+            if min_price is None or price < min_price:
+                min_price = price
+            if max_price is None or price > max_price:
+                max_price = price
+            time_since_start = (time_obj - first_time_obj).total_seconds()
+            price_events.append([time_since_start, price])
+        # second pass: normalise times to fractions of entire t-series duration
+        #              & normalise price range
+        price_range = max_price - min_price
+        end_time = float(time_since_start)
+        offset_function_event_list = []
+        for event in price_events:
+            # normalise price
+            normld_price = (event[1] - min_price) / price_range
+            # clip
+            normld_price = min(normld_price, 1.0)
+            normld_price = max(0.0, normld_price)
+            # scale & convert to integer cents
+            price = int(round(normld_price * scale_factor))
+            normld_event = [event[0] / end_time, price]
+            offset_function_event_list.append(normld_event)
+        return offset_function_event_list
 
 
 # # Below here is where we set up and run a series of experiments
@@ -571,9 +572,6 @@ if __name__ == "__main__":
             NUM_SHVR = int(sys.argv[6])
         except ValueError:
             print("ERROR: Invalid trader schedule. Please enter six integer values.")
-            sys.exit()
-        except Exception as e:
-            print("ERROR: Unknown input error." + str(e))
             sys.exit()
     else:
         print("Invalid input arguements.")

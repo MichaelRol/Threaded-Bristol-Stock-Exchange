@@ -9,7 +9,7 @@ from TBSE_msg_classes import Order
 from TBSE_sys_consts import tbse_sys_max_price, tbse_sys_min_price
 
 
-def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
+def customer_orders(time, coid, traders, trader_stats, order_sched, pending, verbose):
     """
     Produce and distribute customer orders to traders
     Mostly unaltered from original BSE code by Dave Cliff
@@ -17,7 +17,7 @@ def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
     :param coid: last used customer order ID
     :param traders: List of traders
     :param trader_stats: number of buyers and number of sellers
-    :param os: order schedule
+    :param order_sched: order schedule
     :param pending: pending orders to be distributed
     :param verbose: should verbose logging be printed to console
     :return: List containing left over pending orders, cancellations to be made and the final customer ID used
@@ -58,7 +58,7 @@ def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
         if config.useInputFile:
             if len(schedule[0]) > 2:
                 offset_function = schedule[0][2][0]
-                offset_function_params = [schedule_end] + [p for p in schedule[0][2][1]]
+                offset_function_params = [schedule_end] + list(schedule[0][2][1])
                 if callable(offset_function):
                     # same offset for min and max
                     offset_min = offset_function(time_of_issue, offset_function_params)
@@ -68,7 +68,7 @@ def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
                 if len(schedule[0]) > 3:
                     # if second offset function is specfied, that applies only to the max value
                     offset_function = schedule[0][3][0]
-                    offset_function_params = [schedule_end] + [p for p in schedule[0][3][1]]
+                    offset_function_params = [schedule_end] + list(schedule[0][3][1])
                     if callable(offset_function):
                         # this function applies to max
                         offset_max = offset_function(time_of_issue, offset_function_params)
@@ -183,7 +183,7 @@ def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
         sched_end_time = None
         got_one = False
         for schedule in order_schedule:
-            if (schedule['from'] <= curr_time) and (curr_time < schedule['to']):
+            if schedule['from'] <= curr_time < schedule['to']:
                 # within the timezone for this schedule
                 schedrange = schedule['ranges']
                 stepmode = schedule['stepmode']
@@ -191,7 +191,7 @@ def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
                 got_one = True
                 break  # jump out the loop -- so the first matching timezone has priority over any others
         if not got_one:
-            sys.exit('Fail: t=%5.2f not within any timezone in order_schedule=%s' % (curr_time, order_schedule))
+            sys.exit(f'Fail: t={curr_time:5.2f} not within any timezone in order_schedule={order_schedule}')
         return schedrange, stepmode, sched_end_time
 
     n_buyers = trader_stats['n_buyers']
@@ -206,9 +206,9 @@ def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
         new_pending = []
 
         # demand side (buyers)
-        issue_times = get_issue_times(n_buyers, os['timemode'], os['interval'], shuffle_times, True)
+        issue_times = get_issue_times(n_buyers, order_sched['timemode'], order_sched['interval'], shuffle_times, True)
         order_type = 'Bid'
-        (sched, mode, sched_end) = get_sched_mode(time, os['dem'])
+        (sched, mode, sched_end) = get_sched_mode(time, order_sched['dem'])
         for t in range(n_buyers):
             issue_time = time + issue_times[t]
             t_name = 'B%02d' % t
@@ -218,12 +218,12 @@ def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
             coid += 1
 
         # supply side (sellers)
-        issue_times = get_issue_times(n_sellers, os['timemode'], os['interval'], shuffle_times, True)
+        issue_times = get_issue_times(n_sellers, order_sched['timemode'], order_sched['interval'], shuffle_times, True)
         order_type = 'Ask'
-        (sched, mode, sched_end) = get_sched_mode(time, os['sup'])
+        (sched, mode, sched_end) = get_sched_mode(time, order_sched['sup'])
         for t in range(n_sellers):
             issue_time = time + issue_times[t]
-            t_name = 'S%02d' % t
+            t_name = f'S{str(t).zfill(2)}'
             order_price = get_order_price(t, sched, sched_end, n_sellers, mode, issue_time)
             order = Order(t_name, order_type, order_price, 1, issue_time, coid, -3.14)
             new_pending.append(order)
@@ -238,11 +238,11 @@ def customer_orders(time, coid, traders, trader_stats, os, pending, verbose):
                 t_name = order.tid
                 response = traders[t_name].add_order(order, verbose)
                 if verbose:
-                    print('Customer order: %s %s' % (response, order))
+                    print(f'Customer order: {response} {order}')
                 if response == 'LOB_Cancel':
                     cancellations.append(t_name)
                     if verbose:
-                        print('Cancellations: %s' % cancellations)
+                        print(f'Cancellations: {cancellations}')
                 # and then don't add it to new_pending (i.e., delete it)
             else:
                 # this order stays on the pending list

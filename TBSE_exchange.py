@@ -93,8 +93,7 @@ class OrderbookHalf:
 
         if n_orders != self.n_orders:
             return 'Addition'
-        else:
-            return 'Overwrite'
+        return 'Overwrite'
 
     def book_del(self, order):
         """
@@ -105,7 +104,7 @@ class OrderbookHalf:
         """
 
         if self.orders.get(order.tid) is not None:
-            del (self.orders[order.tid])
+            del self.orders[order.tid]
             self.n_orders = len(self.orders)
             self.build_lob()
 
@@ -120,8 +119,8 @@ class OrderbookHalf:
         best_price_counterparty = best_price_orders[1][0][2]
         if best_price_qty == 1:
             # here the order deletes the best price
-            del (self.lob[self.best_price])
-            del (self.orders[best_price_counterparty])
+            del self.lob[self.best_price]
+            del self.orders[best_price_counterparty]
             self.n_orders = self.n_orders - 1
             if self.n_orders > 0:
                 if self.book_type == 'Bid':
@@ -138,7 +137,7 @@ class OrderbookHalf:
             self.lob[self.best_price] = [best_price_qty - 1, best_price_orders[1][1:]]
 
             # update the bid list: counterparty's bid has been deleted
-            del (self.orders[best_price_counterparty])
+            del self.orders[best_price_counterparty]
             self.n_orders = self.n_orders - 1
         self.build_lob()
         return best_price_counterparty
@@ -171,7 +170,7 @@ class Exchange(Orderbook):
         self.quote_id = order.toid + 1
 
         if verbose:
-            print('QUID: order.quid=%d self.quote.id=%d' % (order.qid, self.quote_id))
+            print(f'QUID: order.quid={order.qid} self.quote.id={self.quote_id}')
 
         if order.otype == 'Bid':
             response = self.bids.book_add(order)
@@ -246,9 +245,9 @@ class Exchange(Orderbook):
             'tape': self.tape
         }
         if verbose:
-            print('publish_lob: t=%d' % time)
-            print('BID_lob=%s' % public_data['bids']['lob'])
-            print('ASK_lob=%s' % public_data['asks']['lob'])
+            print(f'publish_lob: t={time}')
+            print(f'BID_lob={public_data["bids"]["lob"]}')
+            print(f'ASK_lob={public_data["asks"]["lob"]}')
 
         return public_data
 
@@ -268,8 +267,8 @@ class Exchange(Orderbook):
         [toid, response] = self.add_order(order, verbose)  # add it to the order lists -- overwriting any previous order
         order.toid = toid
         if verbose:
-            print('TOID: order.toid=%d' % order.toid)
-            print('RESPONSE: %s' % response)
+            print(f'TOID: order.toid={order.toid}')
+            print(f'RESPONSE: {response}')
         best_ask = self.asks.best_price
         best_ask_tid = self.asks.best_tid
         best_bid = self.bids.best_price
@@ -279,7 +278,7 @@ class Exchange(Orderbook):
             if self.asks.n_orders > 0 and best_bid >= best_ask:
                 # bid lifts the best ask
                 if verbose:
-                    print("Bid $%s lifts best ask" % o_price)
+                    print(f"Bid ${o_price} lifts best ask")
                 counterparty = best_ask_tid
                 counter_coid = self.asks.orders[counterparty].coid
                 price = best_ask  # bid crossed ask, so use ask price
@@ -293,7 +292,7 @@ class Exchange(Orderbook):
             if self.bids.n_orders > 0 and best_ask <= best_bid:
                 # ask hits the best bid
                 if verbose:
-                    print("Ask $%s hits best bid" % o_price)
+                    print("Ask ${o_price} hits best bid")
                 # remove the best bid
                 counterparty = best_bid_tid
                 counter_coid = self.bids.orders[counterparty].coid
@@ -310,13 +309,13 @@ class Exchange(Orderbook):
         # NB at this point we have deleted the order from the exchange's records
         # but the two traders concerned still have to be notified
         if verbose:
-            print('counterparty %s' % counterparty)
+            print(f'counterparty {counterparty}')
 
         lob = self.publish_lob(time, False)
         if counterparty is not None:
             # process the trade
             if verbose:
-                print('>>>>>>>>>>>>>>>>>TRADE t=%5.2f $%d %s %s' % (time, price, counterparty, order.tid))
+                print(f'>>>>>>>>>>>>>>>>>TRADE t={time:5.2f} ${price} {counterparty} {order.tid}')
             transaction_record = {
                 'type': 'Trade',
                 't': time,
@@ -329,8 +328,7 @@ class Exchange(Orderbook):
             }
             self.tape.append(transaction_record)
             return transaction_record, lob
-        else:
-            return None, lob
+        return None, lob
 
     def tape_dump(self, file_name, file_mode, tape_mode):
         """
@@ -339,10 +337,10 @@ class Exchange(Orderbook):
         :param file_mode: mode by which to access file (R / R/W / W)
         :param tape_mode: Should tape be wiped after dump
         """
-        dumpfile = open(file_name, file_mode)
-        for tape_item in self.tape:
-            if tape_item['type'] == 'Trade':
-                dumpfile.write('%s, %s\n' % (tape_item['t'], tape_item['price']))
-        dumpfile.close()
-        if tape_mode == 'wipe':
-            self.tape = []
+        with open(file_name, file_mode, encoding="utf-8") as dumpfile:
+            for tape_item in self.tape:
+                if tape_item['type'] == 'Trade':
+                    dumpfile.write(f'{tape_item["t"]}, {tape_item["price"]}\n')
+            dumpfile.close()
+            if tape_mode == 'wipe':
+                self.tape = []
