@@ -69,16 +69,20 @@ def trade_stats(expid, traders, dumpfile):
     trader_types = {}
     for t in traders:
         trader_type = traders[t].ttype
+        t_time1 = 0
+        t_time2 = 0
         if trader_type in trader_types:
             t_balance = trader_types[trader_type]['balance_sum'] + traders[t].balance
             t_trades = trader_types[trader_type]['trades_sum'] + traders[t].n_trades
-            t_time1 = trader_types[trader_type]['time1'] + traders[t].times[0] / traders[t].times[2]
-            t_time2 = trader_types[trader_type]['time2'] + traders[t].times[1] / traders[t].times[3]
+            if traders[t].last_quote is not None:
+                t_time1 = trader_types[trader_type]['time1'] + traders[t].times[0] / traders[t].times[2]
+                t_time2 = trader_types[trader_type]['time2'] + traders[t].times[1] / traders[t].times[3]
             n = trader_types[trader_type]['n'] + 1
         else:
             t_balance = traders[t].balance
-            t_time1 = traders[t].times[0] / traders[t].times[2]
-            t_time2 = traders[t].times[1] / traders[t].times[3]
+            if traders[t].last_quote is not None:
+                t_time1 = traders[t].times[0] / traders[t].times[2]
+                t_time2 = traders[t].times[1] / traders[t].times[3]
             n = 1
             t_trades = traders[t].n_trades
         trader_types[trader_type] = {'n': n, 'balance_sum': t_balance, 'trades_sum': t_trades, 'time1': t_time1,
@@ -91,8 +95,8 @@ def trade_stats(expid, traders, dumpfile):
         t = trader_types[trader_type]['trades_sum']
         time1 = trader_types[trader_type]['time1']
         time2 = trader_types[trader_type]['time2']
-        dumpfile.write(f", {trader_type}, {s}, {n}, {s / float(n)}, "
-                       f"{t / float(n)}, {time1 / float(n)}, {time2 / float(n)}")
+        dumpfile.write(f", {trader_type}, {s}, {n}, {(s / float(n)):.2f}, "
+                       f"{(t / float(n)):.2f}, {(time1 / float(n)):.8f}, {(time2 / float(n)):.8f}")
 
     dumpfile.write('\n')
 

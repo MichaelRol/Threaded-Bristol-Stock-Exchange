@@ -13,12 +13,12 @@ end_time = 600.0
 # Trader Schedule
 # Define number of each algorithm used one side of exchange (buyers or sellers).
 # Same values will be used to define other side of exchange (buyers = sellers).
-numZIC = 0
-numZIP = 5
-numGDX = 0
-numAA = 5
-numGVWY = 0
-numSHVR = 0
+numZIC = 3
+numZIP = 3
+numGDX = 3
+numAA = 3
+numGVWY = 3
+numSHVR = 3
 
 # Order Schedule
 useOffset = True  # Use an offset function to vary equilibrium price, this is disabled if useInputFile = True
