@@ -13,10 +13,10 @@ end_time = 600.0
 # Trader Schedule
 # Define number of each algorithm used one side of exchange (buyers or sellers).
 # Same values will be used to define other side of exchange (buyers = sellers).
-numZIC = 5
+numZIC = 0
 numZIP = 5
 numGDX = 0
-numAA = 0
+numAA = 5
 numGVWY = 0
 numSHVR = 0
 
@@ -38,7 +38,7 @@ supply = {
     }
 }
 
-### NOTE: If symmetric = True this schedule is ignored and the demand schedule will equal the above supply schedule.
+# NOTE: If symmetric = True this schedule is ignored and the demand schedule will equal the above supply schedule.
 demand = {
     'rangeMax': {
         'rangeHigh': 200,

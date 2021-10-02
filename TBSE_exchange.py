@@ -5,7 +5,7 @@ Minor adaptions from the original BSE code by Dave Cliff
 """
 import sys
 
-from TBSE_sys_consts import tbse_sys_min_price, tbse_sys_max_price
+from TBSE_sys_consts import TBSE_SYS_MIN_PRICE, TBSE_SYS_MAX_PRICE
 
 
 class OrderbookHalf:
@@ -149,8 +149,8 @@ class Orderbook:
     """
 
     def __init__(self):
-        self.bids = OrderbookHalf('Bid', tbse_sys_min_price)
-        self.asks = OrderbookHalf('Ask', tbse_sys_max_price)
+        self.bids = OrderbookHalf('Bid', TBSE_SYS_MIN_PRICE)
+        self.asks = OrderbookHalf('Ask', TBSE_SYS_MAX_PRICE)
         self.tape = []
         self.quote_id = 0  # unique ID code for each quote accepted onto the book
 

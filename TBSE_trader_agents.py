@@ -4,7 +4,7 @@ import random
 import sys
 
 from TBSE_msg_classes import Order
-from TBSE_sys_consts import tbse_sys_max_price
+from TBSE_sys_consts import TBSE_SYS_MAX_PRICE
 
 
 class Trader:
@@ -27,8 +27,8 @@ class Trader:
         self.times = [0, 0, 0, 0]  # values used to calculate timing elements
 
     def __str__(self):
-        return '[TID %s type %s balance %s blotter %s orders %s n_trades %s profit_per_time %s]' \
-               % (self.tid, self.ttype, self.balance, self.blotter, self.orders, self.n_trades, self.profit_per_time)
+        return f'[TID {self.tid} type {self.ttype} balance {self.balance} blotter {self.blotter} ' \
+               f'orders {self.orders} n_trades {self.n_trades} profit_per_time {self.profit_per_time}]'
 
     def add_order(self, order, verbose):
         """
@@ -50,7 +50,7 @@ class Trader:
         self.orders[order.coid] = order
 
         if verbose:
-            print('add_order < response=%s' % response)
+            print(f'add_order < response={response}')
         return response
 
     def del_order(self, coid):
@@ -102,7 +102,7 @@ class Trader:
             sys.exit()
 
         if verbose:
-            print('%s profit=%d balance=%d profit/t=%d' % (output_string, profit, self.balance, self.profit_per_time))
+            print(f'{output_string} profit={profit} balance={self.balance} profit/t={self.profit_per_time}')
         self.del_order(coid)  # delete the order
 
     def respond(self, time, lob, trade, verbose):
@@ -111,11 +111,11 @@ class Trader:
         this is a null action, expect it to be overloaded by specific algos
         :param time: Current time
         :param lob: Limit order book
-        :param trade: Trade being responed to
+        :param trade: Trade being responded to
         :param verbose: Should verbose logging be printed to console
         :return: Unused
         """
-        return None
+        pass
 
     def get_order(self, time, countdown, lob):
         """
@@ -125,7 +125,7 @@ class Trader:
         :param lob: Limit order book
         :return: The order
         """
-        return None
+        pass
 
 
 class TraderGiveaway(Trader):
@@ -508,7 +508,6 @@ class TraderZip(Trader):
         self.prev_best_ask_q = lob_best_ask_q
 
 
-# Daniel Snashall's AA trader
 class TraderAa(Trader):
 
     def __init__(self, ttype, tid, balance, time):
@@ -541,7 +540,7 @@ class TraderAa(Trader):
         self.theta = -2.0
         self.theta_max = 2.0
         self.theta_min = -8.0
-        self.marketMax = tbse_sys_max_price
+        self.marketMax = TBSE_SYS_MAX_PRICE
 
         # Variables to describe the market
         self.previous_transactions = []

@@ -91,7 +91,7 @@ def trade_stats(expid, traders, dumpfile):
         t = trader_types[trader_type]['trades_sum']
         time1 = trader_types[trader_type]['time1']
         time2 = trader_types[trader_type]['time2']
-        dumpfile.write(f"{trader_type}, {s}, {n}, {s / float(n)}, "
+        dumpfile.write(f", {trader_type}, {s}, {n}, {s / float(n)}, "
                        f"{t / float(n)}, {time1 / float(n)}, {time2 / float(n)}")
 
     dumpfile.write('\n')

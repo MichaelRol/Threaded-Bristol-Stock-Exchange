@@ -6,7 +6,7 @@ import sys
 
 import config
 from TBSE_msg_classes import Order
-from TBSE_sys_consts import tbse_sys_max_price, tbse_sys_min_price
+from TBSE_sys_consts import TBSE_SYS_MAX_PRICE, TBSE_SYS_MIN_PRICE
 
 
 def customer_orders(time, coid, traders, trader_stats, order_sched, pending, verbose):
@@ -28,9 +28,9 @@ def customer_orders(time, coid, traders, trader_stats, order_sched, pending, ver
         :param price: Order price
         :return: new order price
         """
-        if price < tbse_sys_min_price:
+        if price < TBSE_SYS_MIN_PRICE:
             print('WARNING: price < bse_sys_min -- clipped')
-            price = tbse_sys_min_price
+            price = TBSE_SYS_MIN_PRICE
         return price
 
     def sys_max_check(price):
@@ -39,9 +39,9 @@ def customer_orders(time, coid, traders, trader_stats, order_sched, pending, ver
         :param price: Order price
         :return: new order price
         """
-        if price > tbse_sys_max_price:
+        if price > TBSE_SYS_MAX_PRICE:
             print('WARNING: price > bse_sys_max -- clipped')
-            price = tbse_sys_max_price
+            price = TBSE_SYS_MAX_PRICE
         return price
 
     def get_order_price(i, schedule, schedule_end, n, stepmode, time_of_issue):

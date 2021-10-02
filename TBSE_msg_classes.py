@@ -19,4 +19,4 @@ class Order:
 
     def __str__(self):
         return f'[{self.tid} {self.otype} P={str(self.price).zfill(3)} Q={self.qty} ' \
-               f'T={self.time:5.2f}%5.2f COID:{self.coid} TOID:{self.toid}]'
+               f'T={self.time:5.2f} COID:{self.coid} TOID:{self.toid}]'
