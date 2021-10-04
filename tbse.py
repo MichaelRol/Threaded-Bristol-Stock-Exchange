@@ -589,7 +589,7 @@ if __name__ == "__main__":
         print(" $ python3 tbse.py <int> <int> <int> <int> <int> <int>  ---  Enter 6 integer values representing trader \
         schedule.")
         sys.exit()
-    # pylint: disable:too-many-boolean-expressions
+    # pylint: disable=too-many-boolean-expressions
     if NUM_ZIC < 0 or NUM_ZIP < 0 or NUM_GDX < 0 or NUM_AA < 0 or NUM_GVWY < 0 or NUM_SHVR < 0:
         print("ERROR: Invalid trader schedule. All input integers should be positive.")
         sys.exit()

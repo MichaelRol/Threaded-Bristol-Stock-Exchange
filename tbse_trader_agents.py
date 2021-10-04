@@ -330,7 +330,7 @@ class TraderZip(Trader):
             self.last_quote = order
         return order
 
-    # pylint: disable=too-many-locals,too-many-branches
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     def respond(self, time, lob, trade, verbose):
         """
         update margin on basis of what happened in marke
@@ -658,7 +658,7 @@ class TraderAa(Trader):
 
             self.sell_r = self.sell_r + self.short_term_learning_rate * (delta - self.sell_r)
 
-    # pylint: disable=too-many-locals,too-many-branches
+    # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     def calc_target(self):
         """
         Calculates trader's target price - see AA paper for details.
