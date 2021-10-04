@@ -1,4 +1,5 @@
 """Module containing all trader algos"""
+# pylint: disable=too-many-lines
 import math
 import random
 import sys
@@ -6,7 +7,7 @@ import sys
 from tbse_msg_classes import Order
 from tbse_sys_consts import TBSE_SYS_MAX_PRICE, TBSE_SYS_MIN_PRICE
 
-
+# pylint: disable=too-many-instance-attributes
 class Trader:
     """Trader superclass - mostly unchanged from original BSE code by Dave Cliff
     all Traders have a trader id, bank balance, blotter, and list of orders to execute"""
@@ -105,6 +106,7 @@ class Trader:
             print(f'{output_string} profit={profit} balance={self.balance} profit/t={self.profit_per_time}')
         self.del_order(coid)  # delete the order
 
+    # pylint: disable=unused-argument,no-self-use
     def respond(self, time, lob, trade, verbose):
         """
         specify how trader responds to events in the market
@@ -117,6 +119,7 @@ class Trader:
         """
         return None
 
+    # pylint: disable=unused-argument,no-self-use
     def get_order(self, time, countdown, lob):
         """
         Get's the traders order based on the current state of the market
@@ -266,6 +269,7 @@ class TraderSniper(Trader):
 
 # Trader subclass ZIP
 # After Cliff 1997
+# pylint: disable=too-many-instance-attributes
 class TraderZip(Trader):
     """ZIP init key param-values are those used in Cliff's 1997 original HP Labs tech report
     NB this implementation keeps separate margin values for buying & selling,
@@ -326,6 +330,7 @@ class TraderZip(Trader):
             self.last_quote = order
         return order
 
+    # pylint: disable=too-many-locals,too-many-branches
     def respond(self, time, lob, trade, verbose):
         """
         update margin on basis of what happened in marke
@@ -504,6 +509,7 @@ class TraderZip(Trader):
         self.prev_best_ask_q = lob_best_ask_q
 
 
+# pylint: disable=too-many-instance-attributes
 class TraderAa(Trader):
     """
     Daniel Snashall's implementation of Vytelingum's AA trader, first described in his 2006 PhD Thesis.
@@ -652,6 +658,7 @@ class TraderAa(Trader):
 
             self.sell_r = self.sell_r + self.short_term_learning_rate * (delta - self.sell_r)
 
+    # pylint: disable=too-many-locals,too-many-branches
     def calc_target(self):
         """
         Calculates trader's target price - see AA paper for details.
@@ -714,6 +721,7 @@ class TraderAa(Trader):
             elif self.sell_target < lim:
                 self.sell_target = lim
 
+    # pylint: disable=too-many-branches
     def get_order(self, time, countdown, lob):
         """
         Creates an AA trader's order
@@ -769,6 +777,7 @@ class TraderAa(Trader):
         self.last_quote = order
         return order
 
+    # pylint: disable=too-many-branches
     def respond(self, time, lob, trade, verbose):
         """
         Updates AA trader's internal variables based on activities on the LOB
@@ -855,6 +864,7 @@ class TraderAa(Trader):
             self.calc_target()
 
 
+# pylint: disable=too-many-instance-attributes
 class TraderGdx(Trader):
     """
     Daniel Snashall's implementation of Tesauro & Bredin's GDX Trader algorithm. For more details see:
@@ -946,8 +956,9 @@ class TraderGdx(Trader):
         # always best bid largest one
         if second_best_bid > best_bid:
             a = second_best_bid
-            second_best_bid = best_bid
-            best_bid = a
+            second_best_bid, best_bid = best_bid, a
+            # second_best_bid = best_bid
+            # best_bid = a
 
         # then step size 0.05
         for i in [x * 0.05 for x in range(int(second_best_bid), int(best_bid))]:
@@ -986,8 +997,9 @@ class TraderGdx(Trader):
         # always best ask largest one
         if second_best_ask > best_ask:
             a = second_best_ask
-            second_best_ask = best_ask
-            best_ask = a
+            second_best_ask, best_ask = best_ask, a
+            # second_best_ask = best_ask
+            # best_ask = a
 
         # then step size 0.05
         for i in [x * 0.05 for x in range(int(second_best_ask), int(best_ask))]:

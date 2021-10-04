@@ -13,12 +13,12 @@ end_time = 600.0
 # Trader Schedule
 # Define number of each algorithm used one side of exchange (buyers or sellers).
 # Same values will be used to define other side of exchange (buyers = sellers).
-numZIC = 3
-numZIP = 3
-numGDX = 3
-numAA = 3
-numGVWY = 3
-numSHVR = 3
+numZIC = 0
+numZIP = 5
+numGDX = 5
+numAA = 0
+numGVWY = 0
+numSHVR = 0
 
 # Order Schedule
 useOffset = True  # Use an offset function to vary equilibrium price, this is disabled if useInputFile = True
@@ -53,8 +53,8 @@ demand = {
 numTrials = 50
 
 # For multiple schedules: using input csv file. 
-numSchedulesPerRatio = 10  # Number of schedules per ratio of traders in csv file.
-numTrialsPerSchedule = 100  # Number of trails per schedule.
+numSchedulesPerRatio = 1  # Number of schedules per ratio of traders in csv file.
+numTrialsPerSchedule = 10  # Number of trails per schedule.
 symmetric = True  # Should range of supply = range of demand?
 
 

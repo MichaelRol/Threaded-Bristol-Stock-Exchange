@@ -8,6 +8,7 @@ import sys
 from tbse_sys_consts import TBSE_SYS_MIN_PRICE, TBSE_SYS_MAX_PRICE
 
 
+# pylint: disable=too-many-instance-attributes
 class OrderbookHalf:
     """
     OrderbookHalf is one side of the book: a list of bids or a list of asks, each sorted best-first
@@ -263,6 +264,7 @@ class Exchange(Orderbook):
 
         return public_data
 
+    # pylint: disable=too-many-locals,too-many-branches
     def process_order2(self, time, order, verbose):
         """
         receive an order and either add it to the relevant LOB (ie treat as limit order)

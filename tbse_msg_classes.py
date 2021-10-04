@@ -3,7 +3,7 @@ From original BSE code by Dave Cliff
 Module holding the Order class
 """
 
-
+# pylint: disable=too-many-arguments,too-few-public-methods
 class Order:
     """
     an Order/quote has a trader id, a type (buy/sell) price, quantity, timestamp, and unique i.d.

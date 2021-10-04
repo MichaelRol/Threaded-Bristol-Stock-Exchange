@@ -9,7 +9,7 @@ from tbse_msg_classes import Order
 from tbse_sys_consts import TBSE_SYS_MAX_PRICE, TBSE_SYS_MIN_PRICE
 
 
-# pylint: disable=too-many-arguments,too-many-locals
+# pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 def customer_orders(time, coid, traders, trader_stats, order_sched, pending, verbose):
     """
     Produce and distribute customer orders to traders
@@ -56,6 +56,7 @@ def customer_orders(time, coid, traders, trader_stats, order_sched, pending, ver
         :param time_of_issue: Time order should be issued after
         :return: Order price
         """
+        # pylint: disable=too-many-branches,too-many-statements
         if config.useInputFile:
             if len(schedule[0]) > 2:
                 offset_function = schedule[0][2][0]
@@ -122,15 +123,16 @@ def customer_orders(time, coid, traders, trader_stats, order_sched, pending, ver
         new_order_price = sys_min_check(sys_max_check(new_order_price))
         return new_order_price
 
+    # pylint: disable=too-many-branches
     def get_issue_times(n_traders, stepmode, interval, shuffle, fit_to_interval):
         """
-
-        :param n_traders:
+        Produces issue times for orders
+        :param n_traders: The number of traders
         :param stepmode:
-        :param interval:
-        :param shuffle:
+        :param interval: Gap between each set of orders
+        :param shuffle: Boolean of whether it should be shuffled or not
         :param fit_to_interval:
-        :return:
+        :return: Issue times
         """
         interval = float(interval)
         if n_traders < 1:
