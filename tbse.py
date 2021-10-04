@@ -53,9 +53,9 @@ import time
 from datetime import datetime
 
 import config
-from TBSE_customer_orders import customer_orders
-from TBSE_exchange import Exchange
-from TBSE_trader_agents import TraderGiveaway, TraderShaver, TraderSniper, \
+from tbse_customer_orders import customer_orders
+from tbse_exchange import Exchange
+from tbse_trader_agents import TraderGiveaway, TraderShaver, TraderSniper, \
     TraderZic, TraderZip, TraderAa, TraderGdx
 
 
@@ -106,6 +106,7 @@ def populate_market(trader_spec, traders, shuffle, verbose):
     """create a bunch of trader_list from trader_spec
     returns tuple (n_buyers, n_sellers)
     optionally shuffles the pack of buyers and the pack of sellers"""
+    # pylint: disable=too-many-return-statements
     def create_trader(robot_type, name):
         """
         Function that creates instances of the different Trader Types
@@ -186,6 +187,7 @@ def populate_market(trader_spec, traders, shuffle, verbose):
     return {'n_buyers': n_buyers, 'n_sellers': n_sellers}
 
 
+# pylint: disable=too-many-arguments
 def run_exchange(
         exchange,
         order_q,
@@ -236,6 +238,7 @@ def run_exchange(
     return 0
 
 
+# pylint: disable=too-many-arguments,too-many-locals
 def run_trader(
         trader,
         exchange,
@@ -302,6 +305,7 @@ def run_trader(
 
 
 # one session in the market
+# pylint: disable=too-many-arguments,too-many-locals
 def market_session(
         sess_id,
         sess_length,
@@ -493,7 +497,7 @@ def real_world_schedule_offset_function(t, params):
             break
     return offset
 
-
+# pylint: disable:too-many-locals
 def get_offset_event_list():
     """
     read in a real-world-data data-file for the SDS offset function
@@ -580,9 +584,9 @@ if __name__ == "__main__":
     else:
         print("Invalid input arguements.")
         print("Options for running TBSE:")
-        print("	$ python3 TBSE.py  ---  Run using trader schedule from config.")
-        print(" $ python3 TBSE.py <string>.csv  ---  Enter name of csv file describing a series of trader schedules.")
-        print(" $ python3 TBSE.py <int> <int> <int> <int> <int> <int>  ---  Enter 6 integer values representing trader \
+        print("	$ python3 tbse.py  ---  Run using trader schedule from config.")
+        print(" $ python3 tbse.py <string>.csv  ---  Enter name of csv file describing a series of trader schedules.")
+        print(" $ python3 tbse.py <int> <int> <int> <int> <int> <int>  ---  Enter 6 integer values representing trader \
         schedule.")
         sys.exit()
 
@@ -606,51 +610,50 @@ if __name__ == "__main__":
 
         file_name = f"{str(NUM_ZIC).zfill(2)}-{str(NUM_ZIP).zfill(2)}-{str(NUM_GDX).zfill(2)}-" \
                     f"{str(NUM_AA).zfill(2)}-{str(NUM_GVWY).zfill(2)}-{str(NUM_SHVR).zfill(2)}.csv"
-        tdump = open(file_name, 'w', encoding="utf-8")
+        with open(file_name, 'w', encoding="utf-8") as tdump:
 
-        trader_count = 0
-        for ttype in buyers_spec:
-            trader_count += ttype[1]
-        for ttype in sellers_spec:
-            trader_count += ttype[1]
+            trader_count = 0
+            for ttype in buyers_spec:
+                trader_count += ttype[1]
+            for ttype in sellers_spec:
+                trader_count += ttype[1]
 
-        if trader_count > 40:
-            print("WARNING: Too many traders can cause unstable behaviour.")
+            if trader_count > 40:
+                print("WARNING: Too many traders can cause unstable behaviour.")
 
-        trial = 1
-        if config.numTrials > 1:
-            dump_all = False
-        else:
-            dump_all = True
+            trial = 1
+            if config.numTrials > 1:
+                dump_all = False
+            else:
+                dump_all = True
 
-        while trial < (config.numTrials + 1):
-            trial_id = f'trial{str(trial).zfill(7)}'
-            start_session_event = threading.Event()
-            try:
-                NUM_THREADS = market_session(
-                    trial_id,
-                    config.sessionLength,
-                    config.virtualSessionLength,
-                    traders_spec,
-                    order_sched,
-                    start_session_event,
-                    False)
+            while trial < (config.numTrials + 1):
+                trial_id = f'trial{str(trial).zfill(7)}'
+                start_session_event = threading.Event()
+                try:
+                    NUM_THREADS = market_session(
+                        trial_id,
+                        config.sessionLength,
+                        config.virtualSessionLength,
+                        traders_spec,
+                        order_sched,
+                        start_session_event,
+                        False)
 
-                if NUM_THREADS != trader_count + 2:
+                    if NUM_THREADS != trader_count + 2:
+                        trial = trial - 1
+                        start_session_event.clear()
+                        time.sleep(0.5)
+                except Exception as e:  # pylint: disable=broad-except
+                    print("Error: Market session failed, trying again.")
+                    print(e)
                     trial = trial - 1
                     start_session_event.clear()
                     time.sleep(0.5)
-            except Exception as e:
-                print("Error: Market session failed, trying again.")
-                print(e)
-                trial = trial - 1
-                start_session_event.clear()
-                time.sleep(0.5)
-            tdump.flush()
-            trial = trial + 1
-        tdump.close()
+                tdump.flush()
+                trial = trial + 1
 
-    # To use this section of code run TBSE with 'python3 TBSE.py <csv>'
+    # To use this section of code run TBSE with 'python3 tbse.py <csv>'
     # and have a CSV file with name <string>.csv with a list of values
     # representing the number of each trader type present in the
     # market you wish to run. The order is:
@@ -674,9 +677,6 @@ if __name__ == "__main__":
         except IOError as e:
             print("ERROR: " + e)
             sys.exit()
-        except Exception as e:
-            print(e)
-            sys.exit()
 
         trial_number = 1
         for ratio in ratios:
@@ -691,10 +691,10 @@ if __name__ == "__main__":
                 print("ERROR: Invalid trader schedule. Please enter six, comma-separated, integer values. Skipping "
                       "this trader schedule.")
                 continue
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 print("ERROR: Unknown input error. Skipping this trader schedule." + str(e))
                 continue
-
+            # pylint: disable=too-many-boolean-expressions
             if NUM_ZIC < 0 or NUM_ZIP < 0 or NUM_GDX < 0 or NUM_AA < 0 or NUM_GVWY < 0 or NUM_SHVR < 0:
                 print("ERROR: Invalid trader schedule. All input integers should be positive. Skipping this trader"
                       " schedule.")
@@ -702,7 +702,7 @@ if __name__ == "__main__":
 
             file_name = f"{str(NUM_ZIC).zfill(2)}-{str(NUM_ZIP).zfill(2)}-{str(NUM_GDX).zfill(2)}-" \
                         f"{str(NUM_AA).zfill(2)}-{str(NUM_GVWY).zfill(2)}-{str(NUM_SHVR).zfill(2)}.csv"
-            with open(file_name, 'w') as tdump:
+            with open(file_name, 'w', encoding="utf-8") as tdump:
 
                 for _ in range(0, config.numSchedulesPerRatio):
 
@@ -741,7 +741,7 @@ if __name__ == "__main__":
                                 trial_number = trial_number - 1
                                 start_session_event.clear()
                                 time.sleep(0.5)
-                        except Exception as e:
+                        except Exception as e:  # pylint: disable=broad-except
                             print("Market session failed. Trying again. " + str(e))
                             trial = trial - 1
                             trial_number = trial_number - 1

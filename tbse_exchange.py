@@ -5,7 +5,7 @@ Minor adaptions from the original BSE code by Dave Cliff
 """
 import sys
 
-from TBSE_sys_consts import TBSE_SYS_MIN_PRICE, TBSE_SYS_MAX_PRICE
+from tbse_sys_consts import TBSE_SYS_MIN_PRICE, TBSE_SYS_MAX_PRICE
 
 
 class OrderbookHalf:
@@ -154,6 +154,18 @@ class Orderbook:
         self.tape = []
         self.quote_id = 0  # unique ID code for each quote accepted onto the book
 
+    def get_quote_id(self):
+        """
+        :return: Returns current quote id
+        """
+        return self.quote_id
+
+    def increment_quote_id(self):
+        """
+        Increments quote_id by 1
+        """
+        self.quote_id += 1
+
 
 class Exchange(Orderbook):
     """
@@ -166,8 +178,8 @@ class Exchange(Orderbook):
         :param verbose: should verbose logging be printed to console
         :return: List containing order trader ID and the response from the OrderbookHalf (Either addition or overwrite)
         """
-        order.toid = self.quote_id
-        self.quote_id = order.toid + 1
+        order.toid = self.get_quote_id()
+        self.increment_quote_id()
 
         if verbose:
             print(f'QUID: order.quid={order.qid} self.quote.id={self.quote_id}')

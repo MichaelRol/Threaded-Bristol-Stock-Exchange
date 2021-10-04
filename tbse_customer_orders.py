@@ -5,10 +5,11 @@ import random
 import sys
 
 import config
-from TBSE_msg_classes import Order
-from TBSE_sys_consts import TBSE_SYS_MAX_PRICE, TBSE_SYS_MIN_PRICE
+from tbse_msg_classes import Order
+from tbse_sys_consts import TBSE_SYS_MAX_PRICE, TBSE_SYS_MIN_PRICE
 
 
+# pylint: disable=too-many-arguments,too-many-locals
 def customer_orders(time, coid, traders, trader_stats, order_sched, pending, verbose):
     """
     Produce and distribute customer orders to traders
@@ -211,7 +212,7 @@ def customer_orders(time, coid, traders, trader_stats, order_sched, pending, ver
         (sched, mode, sched_end) = get_sched_mode(time, order_sched['dem'])
         for t in range(n_buyers):
             issue_time = time + issue_times[t]
-            t_name = 'B%02d' % t
+            t_name = f'B{str(t).zfill(2)}'
             order_price = get_order_price(t, sched, sched_end, n_buyers, mode, issue_time)
             order = Order(t_name, order_type, order_price, 1, issue_time, coid, -3.14)
             new_pending.append(order)

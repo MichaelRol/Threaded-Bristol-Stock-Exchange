@@ -1905,11 +1905,11 @@ if __name__ == "__main__":
     else:
         print("Invalid input arguements.")
         print("Options for running TBSE:")
-        print("	$ python3 TBSE.py  ---  Run using trader schedule from config.")
+        print("	$ python3 tbse.py  ---  Run using trader schedule from config.")
         print(
-            "	$ python3 TBSE.py <string>.csv  ---  Enter name of csv file describing a series of trader schedules.")
+            "	$ python3 tbse.py <string>.csv  ---  Enter name of csv file describing a series of trader schedules.")
         print(
-            "	$ python3 TBSE.py <int> <int> <int> <int> <int> <int>  ---  Enter 6 integer values representing trader schedule.")
+            "	$ python3 tbse.py <int> <int> <int> <int> <int> <int>  ---  Enter 6 integer values representing trader schedule.")
         sys.exit()
 
     if numZIC < 0 or numZIP < 0 or numGDX < 0 or numAA < 0 or numGVWY < 0 or numSHVR < 0:

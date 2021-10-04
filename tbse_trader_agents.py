@@ -3,8 +3,8 @@ import math
 import random
 import sys
 
-from TBSE_msg_classes import Order
-from TBSE_sys_consts import TBSE_SYS_MAX_PRICE, TBSE_SYS_MIN_PRICE
+from tbse_msg_classes import Order
+from tbse_sys_consts import TBSE_SYS_MAX_PRICE, TBSE_SYS_MIN_PRICE
 
 
 class Trader:
@@ -923,10 +923,10 @@ class TraderGdx(Trader):
 
     def calc_p_bid(self, m, n):
         """
-
-        :param m:
-        :param n:
-        :return:
+        Calculates the price the GDX trader should bid at. See GDX paper for more details.
+        :param m: Table of expected values
+        :param n: Remaining opportunities to make an offer
+        :return: Price to bid at
         """
         best_return = 0
         best_bid = 0
@@ -961,6 +961,13 @@ class TraderGdx(Trader):
         return best_bid
 
     def calc_p_ask(self, m, n):
+        """
+        Calculates the price the GDX trader should sell at. See GDX paper for more details.
+        :param m: Table of expected values
+        :param n: Remaining opportunities to make an offer
+        :return: Price to sell at
+        :return: Price to sell at
+        """
         best_return = 0
         best_ask = self.limit
         # second_best_return = 0
@@ -994,6 +1001,11 @@ class TraderGdx(Trader):
         return best_ask
 
     def belief_sell(self, price):
+        """
+        Calculates the 'belief' that a certain price will be accepted and traded on the exchange.
+        :param price: The price for which we want to calculate the belief.
+        :return: The belief value (decimal).
+        """
         accepted_asks_greater = 0
         bids_greater = 0
         unaccepted_asks_lower = 0
@@ -1012,6 +1024,11 @@ class TraderGdx(Trader):
         return (accepted_asks_greater + bids_greater) / (accepted_asks_greater + bids_greater + unaccepted_asks_lower)
 
     def belief_buy(self, price):
+        """
+        Calculates the 'belief' that a certain price will be accepted and traded on the exchange.
+        :param price: The price for which we want to calculate the belief.
+        :return: The belief value (decimal).
+        """
         accepted_bids_lower = 0
         asks_lower = 0
         unaccepted_bids_greater = 0
