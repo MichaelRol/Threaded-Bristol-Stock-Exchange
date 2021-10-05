@@ -7,6 +7,7 @@ import sys
 from tbse_msg_classes import Order
 from tbse_sys_consts import TBSE_SYS_MAX_PRICE, TBSE_SYS_MIN_PRICE
 
+
 # pylint: disable=too-many-instance-attributes
 class Trader:
     """Trader superclass - mostly unchanged from original BSE code by Dave Cliff
@@ -637,7 +638,7 @@ class TraderAa(Trader):
 
     def calc_agg(self):
         """
-        Calculates Trder's aggressiveness parameter - see AA paper for details.
+        Calculates Trader's aggressiveness parameter - see AA paper for details.
         """
         if self.job == 'Bid':
             # BUYER

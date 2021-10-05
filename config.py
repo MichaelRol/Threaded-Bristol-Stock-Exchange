@@ -23,16 +23,17 @@ numSHVR = 0
 # Order Schedule
 useOffset = True  # Use an offset function to vary equilibrium price, this is disabled if useInputFile = True
 useInputFile = True  # Use an input file to define order schedule (e.g. Real World Trading data)
-input_file = "RWD/IBM-310817.csv"
+input_file = "RWD/IBM-310817.csv" # Path to real world data input file
 stepmode = 'fixed'  # Valid values: 'fixed', 'jittered', 'random'
 timemode = 'periodic'  # Valid values: 'periodic', 'drip-fixed', 'drip-jitter', 'drip-poisson'
 interval = 30  # Virtual seconds between new set of customer orders being generated.
 
+# Market supply schedule
 supply = {
-    'rangeMax': {
+    'rangeMax': {  # Range of values between which the max possible sell order will be randomly placed
         'rangeHigh': 200,
         'rangeLow': 100
-    }, 'rangeMin': {
+    }, 'rangeMin': {  # Range of values between which the min possible sell order will be randomly placed
         'rangeHigh': 100,
         'rangeLow': 0
     }
@@ -40,10 +41,10 @@ supply = {
 
 # NOTE: If symmetric = True this schedule is ignored and the demand schedule will equal the above supply schedule.
 demand = {
-    'rangeMax': {
+    'rangeMax': {  # Range of values between which the max possible buy order will be randomly placed
         'rangeHigh': 200,
         'rangeLow': 100
-    }, 'rangeMin': {
+    }, 'rangeMin': {  # Range of values between which the min possible buy order will be randomly placed
         'rangeHigh': 100,
         'rangeLow': 0
     }
