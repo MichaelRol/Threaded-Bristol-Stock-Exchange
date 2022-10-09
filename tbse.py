@@ -638,7 +638,7 @@ if __name__ == "__main__":
                         traders_spec,
                         order_sched,
                         start_session_event,
-                        False)
+                        config.verbose)
 
                     if NUM_THREADS != trader_count + 2:
                         trial = trial - 1
@@ -735,7 +735,7 @@ if __name__ == "__main__":
                                                          traders_spec,
                                                          order_sched,
                                                          start_session_event,
-                                                         False)
+                                                         config.verbose)
                             if NUM_THREADS != trader_count + 2:
                                 trial = trial - 1
                                 trial_number = trial_number - 1
