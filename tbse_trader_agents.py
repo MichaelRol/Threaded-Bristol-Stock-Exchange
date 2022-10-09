@@ -463,7 +463,7 @@ class TraderZip(Trader):
 
         if self.job == 'Ask':
             # seller
-            if deal:
+            if deal and trade is not None:
                 trade_price = trade['price']
                 if self.price <= trade_price:
                     # could sell for more? raise margin
@@ -484,7 +484,7 @@ class TraderZip(Trader):
 
         if self.job == 'Bid':
             # buyer
-            if deal:
+            if deal and trade is not None:
                 trade_price = trade['price']
                 if self.price >= trade_price:
                     # could buy for less? raise margin (i.e. cut the price)
