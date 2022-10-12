@@ -1,4 +1,4 @@
-""""
+"""
 Module containing classes for describing a simulated exchange
 
 Minor adaptions from the original BSE code by Dave Cliff
@@ -40,7 +40,7 @@ class OrderbookHalf:
             self.lob_anon.append([price, qty])
 
     def build_lob(self):
-        """"
+        """
         take a list of orders and build a limit-order-book (lob) from it
         NB the exchange needs to know arrival times and trader-id associated with each order
         returns lob as a dictionary (i.e., unsorted)
